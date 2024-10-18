@@ -1,0 +1,19 @@
+{
+  "name": "lottery-dashboard",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "@heroicons/react": "^2.1.5",
+    "python-shell": "^3.0.1"
+  },
+  "scripts": {
+    "start:frontend": "cd frontend && yarn start",
+    "start:backend": "cd backend && python app.py",
+    "start": "concurrently \"yarn start:frontend\" \"yarn start:backend\"",
+    "install:all": "yarn && cd frontend && yarn && cd ../backend && pip install -r requirements.txt"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  }
+}
