@@ -4,7 +4,7 @@ import LotteryTable from './LotteryTable';
 // Eliminamos la importación de Heroicons
 // import { ArrowPathIcon } from '@heroicons/react/24/solid';
 
-const LOTTERIES = ['Pick 3', 'Pick 4'];
+const LOTTERIES = ['Pick 3', 'Pick 4']; 
 const STATES = [
   'tennessee', 'texas', 'maryland', 'ohio', 'georgia', 'new-jersey', 'south-carolina', 'michigan',
   'maine', 'new-hampshire', 'iowa', 'rhode-island', 'kentucky', 'indiana', 'florida',
