@@ -64,7 +64,13 @@ function Dashboard() {
   const fetchResults = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${API_URL}/api/lottery-results`);
+        const response = await fetch('https://lottery-dash.onrender.com/api/lottery-results', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
