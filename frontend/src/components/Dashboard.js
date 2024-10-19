@@ -14,8 +14,6 @@ const STATES = [
   'california', 'idaho'
 ];
 
-const API_URL = 'https://lottery-dash.onrender.com';
-
 function Dashboard() {
   const [results, setResults] = useState(() => {
     const savedResults = localStorage.getItem('lotteryResults');
@@ -64,7 +62,7 @@ function Dashboard() {
   const fetchResults = useCallback(async () => {
     setLoading(true);
     try {
-        const response = await fetch('https://lottery-dash.onrender.com/api/lottery-results', {
+      const response = await fetch('https://lottery-dash.onrender.com/api/lottery-results', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
