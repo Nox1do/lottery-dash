@@ -9,7 +9,7 @@ const LotteryResults = () => {
   useEffect(() => {
     const fetchResults = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/api/lottery-results');
+        const response = await axios.get('https://lottery-dash.onrender.com/api/lottery-results');
         console.log('Datos recibidos:', response.data);  // Log para depuración
         setResults(response.data);
         setLoading(false);
