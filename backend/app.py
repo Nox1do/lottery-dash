@@ -5,7 +5,7 @@ from datetime import datetime
 import pytz
 
 app = Flask(__name__)
-CORS(app, resources={r"/api/*": {"origins": ["http://localhost:3000", "https://tu-app-frontend.vercel.app"]}})
+CORS(app, resources={r"/api/*": {"origins": "https://lottery-dash-ntbtviwd2-nox1dos-projects.vercel.app"}})
 
 @app.route('/', methods=['GET'])
 def home():
