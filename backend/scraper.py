@@ -263,6 +263,10 @@ def scrape_all_lotteries():
     
     return all_results
 
+@app.route('/api/health')
+def health_check():
+    return jsonify({"status": "ok"}), 200
+
 if __name__ == '__main__':
     results = scrape_all_lotteries()
     print(results)
