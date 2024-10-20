@@ -7,7 +7,8 @@ import os
 import logging
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*"}})  # Permite todos los orígenes temporalmente
+CORS(app, resources={r"/api/*": {"origins": "https://lottery-dash.vercel.app"}}, methods=["GET"], allow_headers=["Content-Type", "Authorization"])
+
 
 # Configuración de logging
 logging.basicConfig(level=logging.INFO)
