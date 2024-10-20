@@ -1,6 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed, TimeoutError
 from datetime import datetime, timedelta
 import pytz
 import sys
@@ -250,14 +250,16 @@ def scrape_all_lotteries():
 
     with ThreadPoolExecutor(max_workers=5) as executor:
         future_to_state = {executor.submit(scrape_state_lottery, state): state for state in states}
-        for future in as_completed(future_to_state):
+        for future in as_completed(future_to_state, timeout=60):  # Añade un timeout de 60 segundos
             state = future_to_state[future]
             try:
-                result = future.result()
-                if result and result[state]:  # Verifica si hay resultados para el estado
+                result = future.result(timeout=10)  # Añade un timeout de 10 segundos para cada tarea individual
+                if result and result[state]:
                     all_results.update(result)
+            except TimeoutError:
+                print(f"Timeout al procesar el estado {state}")
             except Exception as exc:
-                pass
+                print(f"Error al procesar el estado {state}: {exc}")
     
     return all_results
 
