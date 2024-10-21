@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 
 const stateOrder = [
   'tennessee', 'texas', 'maryland', 'ohio', 'georgia', 'new-jersey', 'south-carolina', 'michigan',
@@ -92,12 +91,7 @@ const MobileResultCard = ({ state, pick3, pick4, lastUpdate, onExpand }) => {
   };
 
   return (
-    <motion.div 
-      className="bg-white rounded-lg shadow-md mb-4 overflow-hidden"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-    >
+    <div className="bg-white rounded-lg shadow-md mb-4 overflow-hidden transition-all duration-300 ease-in-out">
       <div 
         className="flex justify-between items-center p-4 cursor-pointer"
         onClick={toggleExpand}
@@ -105,40 +99,28 @@ const MobileResultCard = ({ state, pick3, pick4, lastUpdate, onExpand }) => {
         <h3 className="text-lg font-semibold text-gray-800">
           {stateNames[state] || state.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
         </h3>
-        <motion.div
-          animate={{ rotate: isExpanded ? 180 : 0 }}
-          transition={{ duration: 0.3 }}
-        >
+        <div className={`transform transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}>
           <svg className="w-6 h-6 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
           </svg>
-        </motion.div>
+        </div>
       </div>
-      <AnimatePresence>
-        {isExpanded && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            <div className="px-4 pb-4">
-              <div className="flex justify-between mb-2">
-                <span className="text-sm font-medium text-gray-600">PICK 3:</span>
-                <ResultWithCopyButton result={pick3?.result} isMobile={true} />
-              </div>
-              <div className="flex justify-between mb-2">
-                <span className="text-sm font-medium text-gray-600">PICK 4:</span>
-                <ResultWithCopyButton result={pick4?.result} isMobile={true} />
-              </div>
-              <div className="text-xs text-gray-500 mt-2">
-                Última actualización: {formatDateTime(lastUpdate)}
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.div>
+      <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isExpanded ? 'max-h-96' : 'max-h-0'}`}>
+        <div className="px-4 pb-4">
+          <div className="flex justify-between mb-2">
+            <span className="text-sm font-medium text-gray-600">PICK 3:</span>
+            <ResultWithCopyButton result={pick3?.result} isMobile={true} />
+          </div>
+          <div className="flex justify-between mb-2">
+            <span className="text-sm font-medium text-gray-600">PICK 4:</span>
+            <ResultWithCopyButton result={pick4?.result} isMobile={true} />
+          </div>
+          <div className="text-xs text-gray-500 mt-2">
+            Última actualización: {formatDateTime(lastUpdate)}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 
