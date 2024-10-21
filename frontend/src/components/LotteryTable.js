@@ -113,11 +113,11 @@ const LotteryTable = ({ results, messages, lastUpdateTime }) => {
       <td className="px-2 py-2 text-xs text-gray-500">
         <div className="flex flex-col space-y-4">
           <div className="flex justify-between items-center">
-            <span className="font-semibold w-16 text-right mr-2">PICK 3:</span>
+            <span className="font-semibold w-14 text-left">PICK 3:</span>
             <ResultWithCopyButton result={results[`${state}-Pick 3`]?.result} isMobile={true} />
           </div>
           <div className="flex justify-between items-center">
-            <span className="font-semibold w-16 text-right mr-2">PICK 4:</span>
+            <span className="font-semibold w-14 text-left">PICK 4:</span>
             <ResultWithCopyButton result={results[`${state}-Pick 4`]?.result} isMobile={true} />
           </div>
         </div>
