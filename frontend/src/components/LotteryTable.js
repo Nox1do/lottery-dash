@@ -19,11 +19,21 @@ const ResultWithCopyButton = ({ result, isMobile }) => {
   const [copied, setCopied] = useState(false);
 
   const copyToClipboard = () => {
-    navigator.clipboard.writeText(result).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
+    if (result) {
+      navigator.clipboard.writeText(result).then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      });
+    }
   };
+
+  if (!result) {
+    return (
+      <span className="px-2 py-1 text-xs font-semibold bg-gray-200 text-gray-700 rounded">
+        {isMobile ? "N/A" : "No disponible"}
+      </span>
+    );
+  }
 
   if (isMobile) {
     return (
@@ -81,99 +91,53 @@ const LotteryTable = ({ results, messages, lastUpdateTime }) => {
     });
   };
 
-  const renderMobileRow = (state) => (
-    <tr 
-      className="hover:bg-indigo-100 cursor-pointer sm:hidden"
-      onClick={() => setExpandedState(expandedState === state ? null : state)}
-    >
-      <td className="px-2 py-2 text-sm font-bold text-gray-900 text-center uppercase">
-        {stateNames[state] || state.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
-      </td>
-      <td className="px-2 py-2 text-xs text-gray-500">
-        <div className="flex flex-col space-y-4">
-          <div className="flex justify-between items-center">
-            <span className="font-semibold">Pick 3:</span>
-            {results[`${state}-Pick 3`] ? (
-              <ResultWithCopyButton result={results[`${state}-Pick 3`].result} isMobile={true} />
-            ) : (
-              <span className="px-2 py-1 text-xs font-semibold bg-gray-200 text-gray-700 rounded">
-                N/A
-              </span>
-            )}
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="font-semibold">Pick 4:</span>
-            {results[`${state}-Pick 4`] ? (
-              <ResultWithCopyButton result={results[`${state}-Pick 4`].result} isMobile={true} />
-            ) : (
-              <span className="px-2 py-1 text-xs font-semibold bg-gray-200 text-gray-700 rounded">
-                N/A
-              </span>
-            )}
-          </div>
-        </div>
-      </td>
-    </tr>
-  );
-
-  const renderDesktopRow = (state) => (
-    <tr 
-      className="hover:bg-indigo-100 cursor-pointer hidden sm:table-row"
-      onClick={() => setExpandedState(expandedState === state ? null : state)}
-    >
-      <td className="px-4 py-2 text-base font-bold text-gray-900 text-center">
-        {stateNames[state] || state.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
-      </td>
-      <td className="px-4 py-2 text-sm text-gray-500 text-center">
-        {results[`${state}-Pick 3`] ? (
-          <div className="flex flex-col items-center">
-            <ResultWithCopyButton result={results[`${state}-Pick 3`].result} isMobile={false} />
-            <div className="text-xs text-gray-400 mt-1">
-              Última actualización: {formatDateTime(results[`${state}-Pick 3`]?.date)}
-            </div>
-          </div>
-        ) : (
-          <span className="px-2 py-1 text-xs font-semibold bg-gray-200 text-gray-700 rounded">
-            N/A
-          </span>
-        )}
-      </td>
-      <td className="px-4 py-2 text-sm text-gray-500 text-center">
-        {results[`${state}-Pick 4`] ? (
-          <div className="flex flex-col items-center">
-            <ResultWithCopyButton result={results[`${state}-Pick 4`].result} isMobile={false} />
-            <div className="text-xs text-gray-400 mt-1">
-              Última actualización: {formatDateTime(results[`${state}-Pick 4`]?.date)}
-            </div>
-          </div>
-        ) : (
-          <span className="px-2 py-1 text-xs font-semibold bg-gray-200 text-gray-700 rounded">
-            N/A
-          </span>
-        )}
-      </td>
-    </tr>
-  );
-
   return (
     <div className="overflow-x-auto">
-      <table className="w-full bg-white border-collapse">
+      <table className="min-w-full bg-white">
         <thead>
-          <tr className="bg-gray-100">
-            <th className="px-2 sm:px-4 py-3 text-center">Estado</th>
-            <th className="px-2 sm:px-4 py-3 text-center sm:hidden">Resultados</th>
-            <th className="px-4 py-3 text-center hidden sm:table-cell">Pick 3</th>
-            <th className="px-4 py-3 text-center hidden sm:table-cell">Pick 4</th>
+          <tr>
+            <th className="px-2 sm:px-4 py-2">Estado</th>
+            <th className="px-2 sm:px-4 py-2">Resultados</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-200">
           {stateOrder.map((state) => (
             <React.Fragment key={state}>
-              {renderMobileRow(state)}
-              {renderDesktopRow(state)}
+              <tr 
+                className="hover:bg-indigo-100 cursor-pointer"
+                onClick={() => setExpandedState(expandedState === state ? null : state)}
+              >
+                <td className="px-2 sm:px-4 py-2 text-sm sm:text-lg font-bold text-gray-900">
+                  {stateNames[state] || state.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                </td>
+                <td className="px-2 sm:px-4 py-2 text-xs sm:text-sm text-gray-500">
+                  <div className="flex flex-col sm:flex-row sm:space-x-4">
+                    <div className="flex items-center">
+                      <span className="mr-2 font-semibold">Pick 3:</span>
+                      {results[`${state}-Pick 3`] ? (
+                        <ResultWithCopyButton result={results[`${state}-Pick 3`].result} />
+                      ) : (
+                        <span className="px-2 py-1 text-xs font-semibold bg-gray-200 text-gray-700 rounded">
+                          No disponible
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center mt-1 sm:mt-0">
+                      <span className="mr-2 font-semibold">Pick 4:</span>
+                      {results[`${state}-Pick 4`] ? (
+                        <ResultWithCopyButton result={results[`${state}-Pick 4`].result} />
+                      ) : (
+                        <span className="px-2 py-1 text-xs font-semibold bg-gray-200 text-gray-700 rounded">
+                          No disponible
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </td>
+              </tr>
               {expandedState === state && (
-                <tr className="sm:hidden">
-                  <td colSpan="2" className="px-2 py-2 bg-gray-50">
+                <tr>
+                  <td colSpan="2" className="px-2 sm:px-4 py-2 bg-gray-50">
                     <div className="text-xs text-gray-500">
                       {messages[`${state}-Pick 3`]} {messages[`${state}-Pick 4`]}
                     </div>
