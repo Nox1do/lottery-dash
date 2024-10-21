@@ -29,8 +29,8 @@ const ResultWithCopyButton = ({ result, isMobile }) => {
 
   if (!result) {
     return (
-      <span className="px-2 py-1 text-xs font-semibold bg-gray-200 text-gray-700 rounded flex justify-center items-center w-full h-full">
-        {isMobile ? "N/A" : "No disponible"}
+      <span className="px-2 py-1 text-xs font-semibold bg-gray-200 text-gray-700 rounded flex justify-center items-center w-16 h-8">
+        N/A
       </span>
     );
   }
