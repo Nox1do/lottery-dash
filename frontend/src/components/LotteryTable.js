@@ -29,7 +29,7 @@ const ResultWithCopyButton = ({ result, isMobile }) => {
 
   if (!result) {
     return (
-      <span className="px-2 py-1 text-xs font-semibold bg-gray-200 text-gray-700 rounded">
+      <span className="px-2 py-1 text-xs font-semibold bg-gray-200 text-gray-700 rounded flex justify-center items-center w-full h-full">
         {isMobile ? "N/A" : "No disponible"}
       </span>
     );
@@ -37,13 +37,15 @@ const ResultWithCopyButton = ({ result, isMobile }) => {
 
   if (isMobile) {
     return (
-      <div 
-        className="px-4 py-2 inline-flex text-xl leading-5 font-semibold rounded-full bg-green-100 text-green-800 cursor-pointer relative"
-        onClick={copyToClipboard}
-      >
-        {result}
+      <div className="relative">
+        <div 
+          className="px-4 py-2 inline-flex text-xl leading-5 font-semibold rounded-full bg-green-100 text-green-800 cursor-pointer"
+          onClick={copyToClipboard}
+        >
+          {result}
+        </div>
         {copied && (
-          <span className="absolute top-full left-1/2 transform -translate-x-1/2 mt-1 text-xs text-green-600 font-medium bg-white px-2 py-1 rounded shadow">
+          <span className="absolute top-full left-1/2 transform -translate-x-1/2 mt-1 text-xs text-green-600 font-medium bg-white px-2 py-1 rounded shadow z-10">
             ¡Copiado!
           </span>
         )}
@@ -53,12 +55,19 @@ const ResultWithCopyButton = ({ result, isMobile }) => {
 
   return (
     <div className="flex items-center justify-center">
-      <span 
-        className="px-4 py-2 inline-flex text-xl leading-5 font-semibold rounded-full bg-green-100 text-green-800 cursor-pointer"
-        onClick={copyToClipboard}
-      >
+      <span className="px-4 py-2 inline-flex text-xl leading-5 font-semibold rounded-full bg-green-100 text-green-800 mr-2">
         {result}
       </span>
+      <button
+        onClick={copyToClipboard}
+        className="p-1 rounded-full hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200"
+        title="Copiar al portapapeles"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-500 hover:text-indigo-600" viewBox="0 0 20 20" fill="currentColor">
+          <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
+          <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
+        </svg>
+      </button>
       {copied && (
         <span className="ml-2 text-sm text-green-600 font-medium">¡Copiado!</span>
       )}
