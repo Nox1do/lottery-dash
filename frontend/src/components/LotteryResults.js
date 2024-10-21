@@ -39,8 +39,7 @@ const LotteryResults = () => {
         <thead>
           <tr>
             <th>Estado</th>
-            <th>Pick 3</th>
-            <th>Pick 4</th>
+            <th>Resultados</th>
           </tr>
         </thead>
         <tbody>
@@ -49,8 +48,32 @@ const LotteryResults = () => {
             return (
               <tr key={state}>
                 <td>{state.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}</td>
-                <td>{games['Pick 3'] || 'N/A'}</td>
-                <td>{games['Pick 4'] || 'N/A'}</td>
+                <td className="px-4 py-2 text-sm text-gray-500">
+                  <div className="mb-2">
+                    <strong>Pick 3:</strong> {results[`${state}-Pick 3`] ? (
+                      <ResultWithCopyButton result={results[`${state}-Pick 3`].result} />
+                    ) : (
+                      <span className="px-2 py-1 text-xs font-semibold bg-gray-200 text-gray-700 rounded">
+                        No disponible
+                      </span>
+                    )}
+                  </div>
+                  <div>
+                    <strong>Pick 4:</strong> {results[`${state}-Pick 4`] ? (
+                      <ResultWithCopyButton result={results[`${state}-Pick 4`].result} />
+                    ) : (
+                      <span className="px-2 py-1 text-xs font-semibold bg-gray-200 text-gray-700 rounded">
+                        No disponible
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    {messages[`${state}-Pick 3`]} {messages[`${state}-Pick 4`]}
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    Última actualización: {formatDateTime(results[`${state}-Pick 3`]?.date)} {formatDateTime(results[`${state}-Pick 4`]?.date)}
+                  </div>
+                </td>
               </tr>
             );
           })}
