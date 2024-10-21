@@ -15,7 +15,7 @@ const stateNames = {
   'texas-2': 'TEXAS 2',
 };
 
-const ResultWithCopyButton = ({ result }) => {
+const ResultWithCopyButton = ({ result, isMobile }) => {
   const [copied, setCopied] = useState(false);
 
   const copyToClipboard = () => {
@@ -25,8 +25,22 @@ const ResultWithCopyButton = ({ result }) => {
     });
   };
 
+  if (isMobile) {
+    return (
+      <div 
+        className="px-4 py-2 inline-flex text-xl leading-5 font-semibold rounded-full bg-green-100 text-green-800 cursor-pointer"
+        onClick={copyToClipboard}
+      >
+        {result}
+        {copied && (
+          <span className="ml-2 text-sm text-green-600 font-medium">¡Copiado!</span>
+        )}
+      </div>
+    );
+  }
+
   return (
-    <div className="flex items-center">
+    <div className="flex items-center justify-center">
       <span className="px-4 py-2 inline-flex text-xl leading-5 font-semibold rounded-full bg-green-100 text-green-800 mr-2">
         {result}
       </span>
@@ -72,15 +86,15 @@ const LotteryTable = ({ results, messages, lastUpdateTime }) => {
       className="hover:bg-indigo-100 cursor-pointer sm:hidden"
       onClick={() => setExpandedState(expandedState === state ? null : state)}
     >
-      <td className="px-2 py-2 text-sm font-bold text-gray-900 text-center">
+      <td className="px-2 py-2 text-sm font-bold text-gray-900 text-center uppercase">
         {stateNames[state] || state.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
       </td>
       <td className="px-2 py-2 text-xs text-gray-500">
-        <div className="flex flex-col space-y-2">
+        <div className="flex flex-col space-y-4">
           <div className="flex justify-between items-center">
             <span className="font-semibold">Pick 3:</span>
             {results[`${state}-Pick 3`] ? (
-              <ResultWithCopyButton result={results[`${state}-Pick 3`].result} />
+              <ResultWithCopyButton result={results[`${state}-Pick 3`].result} isMobile={true} />
             ) : (
               <span className="px-2 py-1 text-xs font-semibold bg-gray-200 text-gray-700 rounded">
                 N/A
@@ -90,7 +104,7 @@ const LotteryTable = ({ results, messages, lastUpdateTime }) => {
           <div className="flex justify-between items-center">
             <span className="font-semibold">Pick 4:</span>
             {results[`${state}-Pick 4`] ? (
-              <ResultWithCopyButton result={results[`${state}-Pick 4`].result} />
+              <ResultWithCopyButton result={results[`${state}-Pick 4`].result} isMobile={true} />
             ) : (
               <span className="px-2 py-1 text-xs font-semibold bg-gray-200 text-gray-700 rounded">
                 N/A
@@ -112,29 +126,29 @@ const LotteryTable = ({ results, messages, lastUpdateTime }) => {
       </td>
       <td className="px-4 py-2 text-sm text-gray-500 text-center">
         {results[`${state}-Pick 3`] ? (
-          <div>
-            <ResultWithCopyButton result={results[`${state}-Pick 3`].result} />
+          <div className="flex flex-col items-center">
+            <ResultWithCopyButton result={results[`${state}-Pick 3`].result} isMobile={false} />
             <div className="text-xs text-gray-400 mt-1">
               Última actualización: {formatDateTime(results[`${state}-Pick 3`]?.date)}
             </div>
           </div>
         ) : (
           <span className="px-2 py-1 text-xs font-semibold bg-gray-200 text-gray-700 rounded">
-            No disponible
+            N/A
           </span>
         )}
       </td>
       <td className="px-4 py-2 text-sm text-gray-500 text-center">
         {results[`${state}-Pick 4`] ? (
-          <div>
-            <ResultWithCopyButton result={results[`${state}-Pick 4`].result} />
+          <div className="flex flex-col items-center">
+            <ResultWithCopyButton result={results[`${state}-Pick 4`].result} isMobile={false} />
             <div className="text-xs text-gray-400 mt-1">
               Última actualización: {formatDateTime(results[`${state}-Pick 4`]?.date)}
             </div>
           </div>
         ) : (
           <span className="px-2 py-1 text-xs font-semibold bg-gray-200 text-gray-700 rounded">
-            No disponible
+            N/A
           </span>
         )}
       </td>
