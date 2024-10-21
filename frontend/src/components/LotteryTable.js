@@ -36,6 +36,39 @@ const LotteryTable = ({ results, messages, lastUpdateTime }) => {
     });
   };
 
+  const ResultWithCopyButton = ({ result, isMobile }) => {
+    const [copied, setCopied] = useState(false);
+  
+    const copyToClipboard = useCallback(() => {
+      navigator.clipboard.writeText(result).then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      });
+    }, [result]);
+  
+    if (!result) return <span className="text-gray-400">N/A</span>;
+  
+    return (
+      <div className="relative inline-block">
+        <button
+          onClick={copyToClipboard}
+          className={`${
+            isMobile
+              ? 'text-sm bg-green-100 text-green-800 px-2 py-1 rounded'
+              : 'text-base bg-green-100 text-green-800 px-3 py-1 rounded-full'
+          } font-medium hover:bg-green-200 transition-colors duration-200`}
+        >
+          {result}
+        </button>
+        {copied && (
+          <span className="absolute top-full left-1/2 transform -translate-x-1/2 mt-1 px-2 py-1 bg-gray-800 text-white text-xs rounded shadow-lg">
+            Copiado!
+          </span>
+        )}
+      </div>
+    );
+  };
+
   const ResultBadge = ({ result }) => (
     <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
       {result || 'N/A'}
@@ -110,40 +143,27 @@ const LotteryTable = ({ results, messages, lastUpdateTime }) => {
   const renderDesktopView = () => (
     <table className="w-full bg-white border-collapse border border-gray-200 hidden sm:table">
       <thead>
-        <tr className="bg-gray-100 sm:hidden">
-          <th className="px-2 py-2 text-center border-b border-r border-gray-200 w-1/2">ESTADO</th>
-          <th className="px-2 py-2 text-center border-b border-gray-200 w-1/2">RESULTADOS</th>
-        </tr>
         <tr className="bg-gray-100">
-          <th className="px-4 py-3 text-center border-b border-r border-gray-200" rowSpan="2">ESTADO</th>
-          <th className="px-2 py-2 text-center border-b border-gray-200" colSpan="2">RESULTADOS</th>
-          <th className="px-2 py-3 text-center border-b border-gray-200" rowSpan="2">ÚLTIMA<br/>ACTUALIZACIÓN</th>
-        </tr>
-        <tr className="bg-gray-100">
-          <th className="px-2 py-2 text-center border-b border-r border-gray-200">PICK 3</th>
-          <th className="px-2 py-2 text-center border-b border-r border-gray-200">PICK 4</th>
+          <th className="px-4 py-2 text-left">Estado</th>
+          <th className="px-4 py-2 text-center">Pick 3</th>
+          <th className="px-4 py-2 text-center">Pick 4</th>
+          <th className="px-4 py-2 text-center">Última Actualización</th>
         </tr>
       </thead>
       <tbody>
-        {stateOrder.map((state, index) => (
-          <React.Fragment key={state}>
-            <tr 
-              className={`hidden sm:table-row ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'} hover:bg-indigo-50 transition-colors duration-150 ease-in-out`}
-            >
-              <td className="px-4 py-3 text-base font-bold text-gray-900 text-center align-middle border-r border-gray-200">
-                {stateNames[state] || state.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
-              </td>
-              <td className="px-2 py-3 text-sm text-gray-500 text-center align-middle border-r border-gray-200">
-                <ResultWithCopyButton result={results[`${state}-Pick 3`]?.result} isMobile={false} />
-              </td>
-              <td className="px-2 py-3 text-sm text-gray-500 text-center align-middle border-r border-gray-200">
-                <ResultWithCopyButton result={results[`${state}-Pick 4`]?.result} isMobile={false} />
-              </td>
-              <td className="px-2 py-3 text-xs text-gray-400 text-center align-middle">
-                {formatDateTime(results[`${state}-Pick 3`]?.date)}
-              </td>
-            </tr>
-          </React.Fragment>
+        {sortedAndFilteredStates.map((state) => (
+          <tr key={state} className="border-t border-gray-200 hover:bg-gray-50">
+            <td className="px-4 py-2">{stateNames[state] || state}</td>
+            <td className="px-4 py-2 text-center">
+              <ResultWithCopyButton result={results[`${state}-Pick 3`]?.result} isMobile={false} />
+            </td>
+            <td className="px-4 py-2 text-center">
+              <ResultWithCopyButton result={results[`${state}-Pick 4`]?.result} isMobile={false} />
+            </td>
+            <td className="px-4 py-2 text-center text-sm text-gray-500">
+              {formatDateTime(results[`${state}-Pick 3`]?.date)}
+            </td>
+          </tr>
         ))}
       </tbody>
     </table>
