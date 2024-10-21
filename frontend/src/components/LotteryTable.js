@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const stateOrder = [
   'tennessee', 'texas', 'maryland', 'ohio', 'georgia', 'new-jersey', 'south-carolina', 'michigan',
@@ -82,6 +83,65 @@ const ResultWithCopyButton = ({ result, isMobile }) => {
   );
 };
 
+const MobileResultCard = ({ state, pick3, pick4, lastUpdate, onExpand }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const toggleExpand = () => {
+    setIsExpanded(!isExpanded);
+    onExpand();
+  };
+
+  return (
+    <motion.div 
+      className="bg-white rounded-lg shadow-md mb-4 overflow-hidden"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
+      <div 
+        className="flex justify-between items-center p-4 cursor-pointer"
+        onClick={toggleExpand}
+      >
+        <h3 className="text-lg font-semibold text-gray-800">
+          {stateNames[state] || state.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+        </h3>
+        <motion.div
+          animate={{ rotate: isExpanded ? 180 : 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <svg className="w-6 h-6 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </motion.div>
+      </div>
+      <AnimatePresence>
+        {isExpanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <div className="px-4 pb-4">
+              <div className="flex justify-between mb-2">
+                <span className="text-sm font-medium text-gray-600">PICK 3:</span>
+                <ResultWithCopyButton result={pick3?.result} isMobile={true} />
+              </div>
+              <div className="flex justify-between mb-2">
+                <span className="text-sm font-medium text-gray-600">PICK 4:</span>
+                <ResultWithCopyButton result={pick4?.result} isMobile={true} />
+              </div>
+              <div className="text-xs text-gray-500 mt-2">
+                Última actualización: {formatDateTime(lastUpdate)}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+};
+
 const LotteryTable = ({ results, messages, lastUpdateTime }) => {
   const [expandedState, setExpandedState] = useState(null);
 
@@ -102,55 +162,25 @@ const LotteryTable = ({ results, messages, lastUpdateTime }) => {
     });
   };
 
-  const renderMobileRow = (state) => (
-    <tr 
-      className="hover:bg-indigo-100 cursor-pointer sm:hidden"
-      onClick={() => setExpandedState(expandedState === state ? null : state)}
-    >
-      <td className="px-2 py-2 text-sm font-bold text-gray-900 text-center uppercase border-r border-gray-200">
-        {stateNames[state] || state.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
-      </td>
-      <td className="px-2 py-2 text-center">
-        <div className="flex flex-col items-center space-y-2">
-          <ResultWithCopyButton result={results[`${state}-Pick 3`]?.result} isMobile={true} />
-          <ResultWithCopyButton result={results[`${state}-Pick 4`]?.result} isMobile={true} />
-        </div>
-      </td>
-    </tr>
-  );
-
-  const renderMobileExpandedRow = (state) => (
-    <tr className="sm:hidden">
-      <td colSpan="2" className="px-2 py-2 bg-gray-50 text-xs text-gray-500">
-        <div>
-          Última actualización: {formatDateTime(results[`${state}-Pick 3`]?.date)}
-        </div>
-      </td>
-    </tr>
-  );
-
-  const renderDesktopRow = (state, index) => (
-    <tr 
-      className={`hidden sm:table-row ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'} hover:bg-indigo-50 transition-colors duration-150 ease-in-out`}
-    >
-      <td className="px-4 py-3 text-base font-bold text-gray-900 text-center align-middle border-r border-gray-200">
-        {stateNames[state] || state.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
-      </td>
-      <td className="px-2 py-3 text-sm text-gray-500 text-center align-middle border-r border-gray-200">
-        <ResultWithCopyButton result={results[`${state}-Pick 3`]?.result} isMobile={false} />
-      </td>
-      <td className="px-2 py-3 text-sm text-gray-500 text-center align-middle border-r border-gray-200">
-        <ResultWithCopyButton result={results[`${state}-Pick 4`]?.result} isMobile={false} />
-      </td>
-      <td className="px-2 py-3 text-xs text-gray-400 text-center align-middle">
-        {formatDateTime(results[`${state}-Pick 3`]?.date)}
-      </td>
-    </tr>
+  const renderMobileView = () => (
+    <div className="sm:hidden">
+      {stateOrder.map((state) => (
+        <MobileResultCard
+          key={state}
+          state={state}
+          pick3={results[`${state}-Pick 3`]}
+          pick4={results[`${state}-Pick 4`]}
+          lastUpdate={results[`${state}-Pick 3`]?.date}
+          onExpand={() => setExpandedState(state)}
+        />
+      ))}
+    </div>
   );
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full bg-white border-collapse border border-gray-200">
+      {renderMobileView()}
+      <table className="w-full bg-white border-collapse border border-gray-200 hidden sm:table">
         <thead>
           <tr className="bg-gray-100 sm:hidden">
             <th className="px-2 py-2 text-center border-b border-r border-gray-200 w-1/2">ESTADO</th>
