@@ -16,7 +16,6 @@ const stateNames = {
 };
 
 const LotteryTable = ({ results, messages, lastUpdateTime }) => {
-  const [activeTab, setActiveTab] = useState('pick3');
   const [searchTerm, setSearchTerm] = useState('');
 
   const formatDateTime = (date) => {
@@ -36,7 +35,7 @@ const LotteryTable = ({ results, messages, lastUpdateTime }) => {
     });
   };
 
-  const ResultWithCopyButton = ({ result, isMobile }) => {
+  const ResultWithCopyButton = ({ result, label }) => {
     const [copied, setCopied] = useState(false);
   
     const copyToClipboard = useCallback(() => {
@@ -46,22 +45,19 @@ const LotteryTable = ({ results, messages, lastUpdateTime }) => {
       });
     }, [result]);
   
-    if (!result) return <span className="text-gray-400">N/A</span>;
+    if (!result) return null;
   
     return (
-      <div className="relative inline-block">
+      <div className="flex flex-col items-center">
+        <span className="text-sm font-medium text-gray-500 mb-1">{label}</span>
         <button
           onClick={copyToClipboard}
-          className={`${
-            isMobile
-              ? 'text-sm bg-green-100 text-green-800 px-2 py-1 rounded'
-              : 'text-base bg-green-100 text-green-800 px-3 py-1 rounded-full'
-          } font-medium hover:bg-green-200 transition-colors duration-200`}
+          className="text-2xl font-bold bg-green-100 text-green-800 px-4 py-2 rounded-lg hover:bg-green-200 transition-colors duration-200"
         >
           {result}
         </button>
         {copied && (
-          <span className="absolute top-full left-1/2 transform -translate-x-1/2 mt-1 px-2 py-1 bg-gray-800 text-white text-xs rounded shadow-lg">
+          <span className="mt-1 px-2 py-1 bg-gray-800 text-white text-xs rounded shadow-lg">
             Copiado!
           </span>
         )}
@@ -69,23 +65,17 @@ const LotteryTable = ({ results, messages, lastUpdateTime }) => {
     );
   };
 
-  const ResultBadge = ({ result }) => (
-    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-      {result || 'N/A'}
-    </span>
-  );
-
   const sortedAndFilteredStates = useMemo(() => {
     return stateOrder
       .filter(state => state.toLowerCase().includes(searchTerm.toLowerCase()))
       .sort((a, b) => {
-        const resultA = results[`${a}-${activeTab === 'pick3' ? 'Pick 3' : 'Pick 4'}`]?.result;
-        const resultB = results[`${b}-${activeTab === 'pick3' ? 'Pick 3' : 'Pick 4'}`]?.result;
+        const resultA = results[`${a}-Pick 3`]?.result || results[`${a}-Pick 4`]?.result;
+        const resultB = results[`${b}-Pick 3`]?.result || results[`${b}-Pick 4`]?.result;
         if (resultA && !resultB) return -1;
         if (!resultA && resultB) return 1;
         return 0;
       });
-  }, [results, activeTab, searchTerm]);
+  }, [results, searchTerm]);
 
   const renderMobileView = () => (
     <div className="sm:hidden">
@@ -96,24 +86,6 @@ const LotteryTable = ({ results, messages, lastUpdateTime }) => {
             Última actualización: {formatDateTime(lastUpdateTime)}
           </span>
         </div>
-        <div className="flex space-x-2 mb-4">
-          <button
-            className={`flex-1 py-2 px-4 rounded-full font-medium ${
-              activeTab === 'pick3' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700'
-            }`}
-            onClick={() => setActiveTab('pick3')}
-          >
-            Pick 3
-          </button>
-          <button
-            className={`flex-1 py-2 px-4 rounded-full font-medium ${
-              activeTab === 'pick4' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700'
-            }`}
-            onClick={() => setActiveTab('pick4')}
-          >
-            Pick 4
-          </button>
-        </div>
         <input
           type="text"
           placeholder="Buscar estado..."
@@ -122,17 +94,18 @@ const LotteryTable = ({ results, messages, lastUpdateTime }) => {
           onChange={(e) => setSearchTerm(e.target.value)}
         />
       </div>
-      <div className="mt-4 space-y-4">
+      <div className="mt-4 space-y-6">
         {sortedAndFilteredStates.map((state) => (
           <div key={state} className="bg-white rounded-lg shadow-md p-4">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-gray-800">
-                {stateNames[state] || state.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
-              </h3>
-              <ResultBadge result={results[`${state}-${activeTab === 'pick3' ? 'Pick 3' : 'Pick 4'}`]?.result} />
+            <h3 className="text-lg font-semibold text-gray-800 mb-3">
+              {stateNames[state] || state.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+            </h3>
+            <div className="flex justify-around">
+              <ResultWithCopyButton result={results[`${state}-Pick 3`]?.result} label="PICK 3" />
+              <ResultWithCopyButton result={results[`${state}-Pick 4`]?.result} label="PICK 4" />
             </div>
-            <div className="mt-2 text-sm text-gray-500">
-              Última actualización: {formatDateTime(results[`${state}-${activeTab === 'pick3' ? 'Pick 3' : 'Pick 4'}`]?.date)}
+            <div className="mt-3 text-sm text-center text-gray-500">
+              Última actualización: {formatDateTime(results[`${state}-Pick 3`]?.date || results[`${state}-Pick 4`]?.date)}
             </div>
           </div>
         ))}
