@@ -66,40 +66,47 @@ const LotteryTable = ({ results, messages, lastUpdateTime }) => {
   };
 
   return (
-    <table className="min-w-full bg-white">
-      <tbody className="divide-y divide-gray-200">
-        {stateOrder.map((state) => (
-          <tr key={state} className="transition-colors duration-200 ease-in-out hover:bg-indigo-100 group">
-            <td className="px-6 py-4 whitespace-nowrap text-lg font-bold text-gray-900 group-hover:text-indigo-900">
-              <div className="uppercase">
-                {stateNames[state] || state.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
-              </div>
-            </td>
-            {['Pick 3', 'Pick 4'].map(lottery => {
-              const key = `${state}-${lottery}`;
-              const result = results[key];
-              return (
-                <td key={key} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {result && result.result ? (
-                    <ResultWithCopyButton result={result.result} />
-                  ) : (
-                    <span className="px-4 py-2 inline-flex text-xl leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
-                      No disponible
-                    </span>
-                  )}
-                  <div className="text-xs text-gray-500 mt-1">
-                    {messages[key]}
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    Última actualización: {formatDateTime(result ? result.date : null)}
-                  </div>
-                </td>
-              );
-            })}
+    <div className="overflow-x-auto">
+      <table className="min-w-full bg-white">
+        <thead>
+          <tr>
+            <th className="px-4 py-2">Estado</th>
+            <th className="px-4 py-2">Pick 3</th>
+            <th className="px-4 py-2">Pick 4</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody className="divide-y divide-gray-200">
+          {stateOrder.map((state) => (
+            <tr key={state} className="hover:bg-indigo-100">
+              <td className="px-4 py-2 text-lg font-bold text-gray-900">
+                {stateNames[state] || state.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+              </td>
+              {['Pick 3', 'Pick 4'].map(lottery => {
+                const key = `${state}-${lottery}`;
+                const result = results[key];
+                return (
+                  <td key={key} className="px-4 py-2 text-sm text-gray-500">
+                    {result && result.result ? (
+                      <ResultWithCopyButton result={result.result} />
+                    ) : (
+                      <span className="px-2 py-1 text-xs font-semibold bg-gray-200 text-gray-700 rounded">
+                        No disponible
+                      </span>
+                    )}
+                    <div className="text-xs text-gray-500 mt-1">
+                      {messages[key]}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      Última actualización: {formatDateTime(result ? result.date : null)}
+                    </div>
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 };
 
