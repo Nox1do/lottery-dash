@@ -122,6 +122,25 @@ const LotteryTable = ({ results, messages, lastUpdateTime }) => {
     </tr>
   );
 
+  const renderMobileExpandedRow = (state) => (
+    <tr className="sm:hidden">
+      <td colSpan="2" className="px-2 py-2 bg-gray-50">
+        <div className="text-xs text-gray-500">
+          {messages[`${state}-Pick 3`] === messages[`${state}-Pick 4`] ? 
+            messages[`${state}-Pick 3`] : 
+            `Pick 3: ${messages[`${state}-Pick 3`]}, Pick 4: ${messages[`${state}-Pick 4`]}`}
+        </div>
+        <div className="text-xs text-gray-500 mt-1">
+          Última actualización: {
+            results[`${state}-Pick 3`]?.date === results[`${state}-Pick 4`]?.date ?
+            formatDateTime(results[`${state}-Pick 3`]?.date) :
+            `Pick 3: ${formatDateTime(results[`${state}-Pick 3`]?.date)}, Pick 4: ${formatDateTime(results[`${state}-Pick 4`]?.date)}`
+          }
+        </div>
+      </td>
+    </tr>
+  );
+
   const renderDesktopRow = (state) => (
     <tr 
       className="hover:bg-indigo-100 cursor-pointer hidden sm:table-row"
@@ -163,19 +182,8 @@ const LotteryTable = ({ results, messages, lastUpdateTime }) => {
           {stateOrder.map((state) => (
             <React.Fragment key={state}>
               {renderMobileRow(state)}
+              {expandedState === state && renderMobileExpandedRow(state)}
               {renderDesktopRow(state)}
-              {expandedState === state && (
-                <tr className="sm:hidden">
-                  <td colSpan="2" className="px-2 py-2 bg-gray-50">
-                    <div className="text-xs text-gray-500">
-                      {messages[`${state}-Pick 3`]} {messages[`${state}-Pick 4`]}
-                    </div>
-                    <div className="text-xs text-gray-500 mt-1">
-                      Última actualización: {formatDateTime(results[`${state}-Pick 3`]?.date)} {formatDateTime(results[`${state}-Pick 4`]?.date)}
-                    </div>
-                  </td>
-                </tr>
-              )}
             </React.Fragment>
           ))}
         </tbody>
