@@ -1,9 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import LotteryTable from './LotteryTable';
 
-// Eliminamos la importación de Heroicons
-// import { ArrowPathIcon } from '@heroicons/react/24/solid';
-
 const LOTTERIES = ['Pick 3', 'Pick 4'];
 const STATES = [
   'tennessee', 'texas', 'maryland', 'ohio', 'georgia', 'new-jersey', 'south-carolina', 'michigan',
@@ -54,7 +51,7 @@ function Dashboard() {
     } else {
       return {
         result: { result: null, date: null },
-        message: "Resultados no disponibles"
+        message: "N/A"
       };
     }
   }, []);
@@ -94,14 +91,14 @@ function Dashboard() {
               newMessages[key] = message;
             } else {
               newResults[key] = { result: null, date: null };
-              newMessages[key] = "Resultados no disponibles";
+              newMessages[key] = "N/A";
             }
           });
         } else {
           LOTTERIES.forEach(lottery => {
             const key = `${state}-${lottery}`;
             newResults[key] = { result: null, date: null };
-            newMessages[key] = "Resultados no disponibles";
+            newMessages[key] = "N/A";
           });
         }
       });
@@ -124,7 +121,7 @@ function Dashboard() {
   }, [fetchResults]);
 
   const handleUpdate = useCallback(async () => {
-    if (isUpdating) return; // Evita múltiples clics
+    if (isUpdating) return;
     setIsUpdating(true);
     
     const startTime = Date.now();
@@ -135,7 +132,6 @@ function Dashboard() {
       const elapsedTime = Date.now() - startTime;
       const remainingTime = Math.max(2000 - elapsedTime, 0);
       
-      // Espera el tiempo restante para completar 2 segundos
       await new Promise(resolve => setTimeout(resolve, remainingTime));
       
       setIsUpdating(false);
@@ -181,8 +177,7 @@ function Dashboard() {
             {isUpdating ? 'Actualizando...' : 'Actualizar Resultados'}
           </button>
         </div>
-        {/* Asegurar que el contenido principal también tenga desplazamiento si es necesario */}
-        <div className="bg-gray-50 rounded-lg p-6 overflow-x-auto">
+        <div className="bg-white rounded-lg shadow-lg p-6 overflow-x-auto">
           <LotteryTable 
             results={results} 
             messages={messages} 
