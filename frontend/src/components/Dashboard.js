@@ -4,7 +4,7 @@ import LotteryTable from './LotteryTable';
 // Eliminamos la importación de Heroicons
 // import { ArrowPathIcon } from '@heroicons/react/24/solid';
 
-const LOTTERIES = ['Pick 3', 'Pick 4']; 
+const LOTTERIES = ['Pick 3', 'Pick 4'];
 const STATES = [
   'tennessee', 'texas', 'maryland', 'ohio', 'georgia', 'new-jersey', 'south-carolina', 'michigan',
   'maine', 'new-hampshire', 'iowa', 'rhode-island', 'kentucky', 'indiana', 'florida',
@@ -62,13 +62,7 @@ function Dashboard() {
   const fetchResults = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch('https://lottery-dash.onrender.com/api/lottery-results', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-      });
+      const response = await fetch('http://localhost:5000/api/lottery-results');
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -187,7 +181,8 @@ function Dashboard() {
             {isUpdating ? 'Actualizando...' : 'Actualizar Resultados'}
           </button>
         </div>
-        <div className="bg-gray-50 rounded-lg p-6 overflow-hidden">
+        {/* Asegurar que el contenido principal también tenga desplazamiento si es necesario */}
+        <div className="bg-gray-50 rounded-lg p-6 overflow-x-auto">
           <LotteryTable 
             results={results} 
             messages={messages} 
@@ -198,4 +193,5 @@ function Dashboard() {
     </div>
   );
 }
+
 export default Dashboard;
