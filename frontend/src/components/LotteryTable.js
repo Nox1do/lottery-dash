@@ -146,19 +146,23 @@ const LotteryTable = ({ results, messages, lastUpdateTime }) => {
       className="hover:bg-indigo-100 cursor-pointer hidden sm:table-row"
       onClick={() => setExpandedState(expandedState === state ? null : state)}
     >
-      <td className="px-4 py-2 text-base font-bold text-gray-900 text-center">
+      <td className="px-4 py-2 text-base font-bold text-gray-900 text-center w-1/4">
         {stateNames[state] || state.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
       </td>
-      <td className="px-4 py-2 text-sm text-gray-500 text-center">
-        <ResultWithCopyButton result={results[`${state}-Pick 3`]?.result} isMobile={false} />
-        <div className="text-xs text-gray-400 mt-1">
-          Última actualización: {formatDateTime(results[`${state}-Pick 3`]?.date)}
+      <td className="px-2 py-2 text-sm text-gray-500 text-center w-1/3">
+        <div className="flex flex-col items-center">
+          <ResultWithCopyButton result={results[`${state}-Pick 3`]?.result} isMobile={false} />
+          <div className="text-xs text-gray-400 mt-1">
+            Última actualización: {formatDateTime(results[`${state}-Pick 3`]?.date)}
+          </div>
         </div>
       </td>
-      <td className="px-4 py-2 text-sm text-gray-500 text-center">
-        <ResultWithCopyButton result={results[`${state}-Pick 4`]?.result} isMobile={false} />
-        <div className="text-xs text-gray-400 mt-1">
-          Última actualización: {formatDateTime(results[`${state}-Pick 4`]?.date)}
+      <td className="px-2 py-2 text-sm text-gray-500 text-center w-1/3">
+        <div className="flex flex-col items-center">
+          <ResultWithCopyButton result={results[`${state}-Pick 4`]?.result} isMobile={false} />
+          <div className="text-xs text-gray-400 mt-1">
+            Última actualización: {formatDateTime(results[`${state}-Pick 4`]?.date)}
+          </div>
         </div>
       </td>
     </tr>
@@ -169,13 +173,13 @@ const LotteryTable = ({ results, messages, lastUpdateTime }) => {
       <table className="w-full bg-white border-collapse">
         <thead>
           <tr className="bg-gray-100">
-            <th className="px-2 sm:px-4 py-3 text-center" rowSpan="2">ESTADO</th>
-            <th className="px-2 sm:px-4 py-3 text-center sm:hidden">RESULTADOS</th>
-            <th className="px-4 py-3 text-center hidden sm:table-cell" colSpan="2">RESULTADOS</th>
+            <th className="px-4 py-3 text-center w-1/4" rowSpan="2">ESTADO</th>
+            <th className="px-2 py-3 text-center sm:hidden">RESULTADOS</th>
+            <th className="px-2 py-3 text-center hidden sm:table-cell" colSpan="2">RESULTADOS</th>
           </tr>
           <tr className="bg-gray-100 hidden sm:table-row">
-            <th className="px-4 py-3 text-center">PICK 3</th>
-            <th className="px-4 py-3 text-center">PICK 4</th>
+            <th className="px-2 py-3 text-center w-1/3">PICK 3</th>
+            <th className="px-2 py-3 text-center w-1/3">PICK 4</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-200">
