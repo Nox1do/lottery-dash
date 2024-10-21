@@ -69,7 +69,7 @@ const LotteryTable = ({ results, messages, lastUpdateTime }) => {
 
   const renderMobileRow = (state) => (
     <tr 
-      className="hover:bg-indigo-100 cursor-pointer md:hidden"
+      className="hover:bg-indigo-100 cursor-pointer sm:hidden"
       onClick={() => setExpandedState(expandedState === state ? null : state)}
     >
       <td className="px-2 py-2 text-sm font-bold text-gray-900 text-center">
@@ -104,7 +104,7 @@ const LotteryTable = ({ results, messages, lastUpdateTime }) => {
 
   const renderDesktopRow = (state) => (
     <tr 
-      className="hover:bg-indigo-100 cursor-pointer hidden md:table-row"
+      className="hover:bg-indigo-100 cursor-pointer hidden sm:table-row"
       onClick={() => setExpandedState(expandedState === state ? null : state)}
     >
       <td className="px-4 py-2 text-base font-bold text-gray-900 text-center">
@@ -146,10 +146,10 @@ const LotteryTable = ({ results, messages, lastUpdateTime }) => {
       <table className="w-full bg-white border-collapse">
         <thead>
           <tr className="bg-gray-100">
-            <th className="px-2 md:px-4 py-3 text-center">Estado</th>
-            <th className="px-2 md:px-4 py-3 text-center md:hidden">Resultados</th>
-            <th className="px-4 py-3 text-center hidden md:table-cell">Pick 3</th>
-            <th className="px-4 py-3 text-center hidden md:table-cell">Pick 4</th>
+            <th className="px-2 sm:px-4 py-3 text-center">Estado</th>
+            <th className="px-2 sm:px-4 py-3 text-center sm:hidden">Resultados</th>
+            <th className="px-4 py-3 text-center hidden sm:table-cell">Pick 3</th>
+            <th className="px-4 py-3 text-center hidden sm:table-cell">Pick 4</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-200">
@@ -158,7 +158,7 @@ const LotteryTable = ({ results, messages, lastUpdateTime }) => {
               {renderMobileRow(state)}
               {renderDesktopRow(state)}
               {expandedState === state && (
-                <tr className="md:hidden">
+                <tr className="sm:hidden">
                   <td colSpan="2" className="px-2 py-2 bg-gray-50">
                     <div className="text-xs text-gray-500">
                       {messages[`${state}-Pick 3`]} {messages[`${state}-Pick 4`]}
