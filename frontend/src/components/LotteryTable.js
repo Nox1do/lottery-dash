@@ -71,7 +71,9 @@ const LotteryTable = ({ results, messages, lastUpdateTime }) => {
         <thead>
           <tr>
             <th className="px-4 py-2">Estado</th>
-            <th className="px-4 py-2">Resultados</th>
+            <th className="px-4 py-2 hidden sm:table-cell">Pick 3</th>
+            <th className="px-4 py-2 hidden sm:table-cell">Pick 4</th>
+            <th className="px-4 py-2 sm:hidden">Resultados</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-200">
@@ -80,7 +82,25 @@ const LotteryTable = ({ results, messages, lastUpdateTime }) => {
               <td className="px-4 py-2 text-lg font-bold text-gray-900">
                 {stateNames[state] || state.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
               </td>
-              <td className="px-4 py-2 text-sm text-gray-500">
+              <td className="px-4 py-2 text-sm text-gray-500 hidden sm:table-cell">
+                {results[`${state}-Pick 3`] ? (
+                  <ResultWithCopyButton result={results[`${state}-Pick 3`].result} />
+                ) : (
+                  <span className="px-2 py-1 text-xs font-semibold bg-gray-200 text-gray-700 rounded">
+                    No disponible
+                  </span>
+                )}
+              </td>
+              <td className="px-4 py-2 text-sm text-gray-500 hidden sm:table-cell">
+                {results[`${state}-Pick 4`] ? (
+                  <ResultWithCopyButton result={results[`${state}-Pick 4`].result} />
+                ) : (
+                  <span className="px-2 py-1 text-xs font-semibold bg-gray-200 text-gray-700 rounded">
+                    No disponible
+                  </span>
+                )}
+              </td>
+              <td className="px-4 py-2 text-sm text-gray-500 sm:hidden">
                 <div className="flex flex-col space-y-2">
                   <div className="flex items-center">
                     <strong className="mr-2">Pick 3:</strong>
