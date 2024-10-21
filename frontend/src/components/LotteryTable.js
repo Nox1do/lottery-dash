@@ -48,6 +48,8 @@ const ResultWithCopyButton = ({ result }) => {
 };
 
 const LotteryTable = ({ results, messages, lastUpdateTime }) => {
+  const [expandedState, setExpandedState] = useState(null);
+
   const formatDateTime = (date) => {
     if (!date) return 'N/A';
     if (typeof date === 'string' && date.includes('/')) {
@@ -70,67 +72,58 @@ const LotteryTable = ({ results, messages, lastUpdateTime }) => {
       <table className="min-w-full bg-white">
         <thead>
           <tr>
-            <th className="px-4 py-2">Estado</th>
-            <th className="px-4 py-2 hidden sm:table-cell">Pick 3</th>
-            <th className="px-4 py-2 hidden sm:table-cell">Pick 4</th>
-            <th className="px-4 py-2 sm:hidden">Resultados</th>
+            <th className="px-2 sm:px-4 py-2">Estado</th>
+            <th className="px-2 sm:px-4 py-2">Resultados</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-200">
           {stateOrder.map((state) => (
-            <tr key={state} className="hover:bg-indigo-100">
-              <td className="px-4 py-2 text-lg font-bold text-gray-900">
-                {stateNames[state] || state.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
-              </td>
-              <td className="px-4 py-2 text-sm text-gray-500 hidden sm:table-cell">
-                {results[`${state}-Pick 3`] ? (
-                  <ResultWithCopyButton result={results[`${state}-Pick 3`].result} />
-                ) : (
-                  <span className="px-2 py-1 text-xs font-semibold bg-gray-200 text-gray-700 rounded">
-                    No disponible
-                  </span>
-                )}
-              </td>
-              <td className="px-4 py-2 text-sm text-gray-500 hidden sm:table-cell">
-                {results[`${state}-Pick 4`] ? (
-                  <ResultWithCopyButton result={results[`${state}-Pick 4`].result} />
-                ) : (
-                  <span className="px-2 py-1 text-xs font-semibold bg-gray-200 text-gray-700 rounded">
-                    No disponible
-                  </span>
-                )}
-              </td>
-              <td className="px-4 py-2 text-sm text-gray-500 sm:hidden">
-                <div className="flex flex-col space-y-2">
-                  <div className="flex items-center">
-                    <strong className="mr-2">Pick 3:</strong>
-                    {results[`${state}-Pick 3`] ? (
-                      <ResultWithCopyButton result={results[`${state}-Pick 3`].result} />
-                    ) : (
-                      <span className="px-2 py-1 text-xs font-semibold bg-gray-200 text-gray-700 rounded">
-                        No disponible
-                      </span>
-                    )}
+            <React.Fragment key={state}>
+              <tr 
+                className="hover:bg-indigo-100 cursor-pointer"
+                onClick={() => setExpandedState(expandedState === state ? null : state)}
+              >
+                <td className="px-2 sm:px-4 py-2 text-sm sm:text-lg font-bold text-gray-900">
+                  {stateNames[state] || state.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                </td>
+                <td className="px-2 sm:px-4 py-2 text-xs sm:text-sm text-gray-500">
+                  <div className="flex flex-col sm:flex-row sm:space-x-4">
+                    <div className="flex items-center">
+                      <span className="mr-2 font-semibold">Pick 3:</span>
+                      {results[`${state}-Pick 3`] ? (
+                        <ResultWithCopyButton result={results[`${state}-Pick 3`].result} />
+                      ) : (
+                        <span className="px-2 py-1 text-xs font-semibold bg-gray-200 text-gray-700 rounded">
+                          No disponible
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center mt-1 sm:mt-0">
+                      <span className="mr-2 font-semibold">Pick 4:</span>
+                      {results[`${state}-Pick 4`] ? (
+                        <ResultWithCopyButton result={results[`${state}-Pick 4`].result} />
+                      ) : (
+                        <span className="px-2 py-1 text-xs font-semibold bg-gray-200 text-gray-700 rounded">
+                          No disponible
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex items-center">
-                    <strong className="mr-2">Pick 4:</strong>
-                    {results[`${state}-Pick 4`] ? (
-                      <ResultWithCopyButton result={results[`${state}-Pick 4`].result} />
-                    ) : (
-                      <span className="px-2 py-1 text-xs font-semibold bg-gray-200 text-gray-700 rounded">
-                        No disponible
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    {messages[`${state}-Pick 3`]} {messages[`${state}-Pick 4`]}
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    Última actualización: {formatDateTime(results[`${state}-Pick 3`]?.date)} {formatDateTime(results[`${state}-Pick 4`]?.date)}
-                  </div>
-                </div>
-              </td>
-            </tr>
+                </td>
+              </tr>
+              {expandedState === state && (
+                <tr>
+                  <td colSpan="2" className="px-2 sm:px-4 py-2 bg-gray-50">
+                    <div className="text-xs text-gray-500">
+                      {messages[`${state}-Pick 3`]} {messages[`${state}-Pick 4`]}
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      Última actualización: {formatDateTime(results[`${state}-Pick 3`]?.date)} {formatDateTime(results[`${state}-Pick 4`]?.date)}
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </React.Fragment>
           ))}
         </tbody>
       </table>
