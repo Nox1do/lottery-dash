@@ -71,8 +71,7 @@ const LotteryTable = ({ results, messages, lastUpdateTime }) => {
         <thead>
           <tr>
             <th className="px-4 py-2">Estado</th>
-            <th className="px-4 py-2">Pick 3</th>
-            <th className="px-4 py-2">Pick 4</th>
+            <th className="px-4 py-2">Resultados</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-200">
@@ -81,27 +80,36 @@ const LotteryTable = ({ results, messages, lastUpdateTime }) => {
               <td className="px-4 py-2 text-lg font-bold text-gray-900">
                 {stateNames[state] || state.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
               </td>
-              {['Pick 3', 'Pick 4'].map(lottery => {
-                const key = `${state}-${lottery}`;
-                const result = results[key];
-                return (
-                  <td key={key} className="px-4 py-2 text-sm text-gray-500">
-                    {result && result.result ? (
-                      <ResultWithCopyButton result={result.result} />
+              <td className="px-4 py-2 text-sm text-gray-500">
+                <div className="flex flex-col space-y-2">
+                  <div className="flex items-center">
+                    <strong className="mr-2">Pick 3:</strong>
+                    {results[`${state}-Pick 3`] ? (
+                      <ResultWithCopyButton result={results[`${state}-Pick 3`].result} />
                     ) : (
                       <span className="px-2 py-1 text-xs font-semibold bg-gray-200 text-gray-700 rounded">
                         No disponible
                       </span>
                     )}
-                    <div className="text-xs text-gray-500 mt-1">
-                      {messages[key]}
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      Última actualización: {formatDateTime(result ? result.date : null)}
-                    </div>
-                  </td>
-                );
-              })}
+                  </div>
+                  <div className="flex items-center">
+                    <strong className="mr-2">Pick 4:</strong>
+                    {results[`${state}-Pick 4`] ? (
+                      <ResultWithCopyButton result={results[`${state}-Pick 4`].result} />
+                    ) : (
+                      <span className="px-2 py-1 text-xs font-semibold bg-gray-200 text-gray-700 rounded">
+                        No disponible
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    {messages[`${state}-Pick 3`]} {messages[`${state}-Pick 4`]}
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    Última actualización: {formatDateTime(results[`${state}-Pick 3`]?.date)} {formatDateTime(results[`${state}-Pick 4`]?.date)}
+                  </div>
+                </div>
+              </td>
             </tr>
           ))}
         </tbody>
