@@ -58,7 +58,7 @@ const ResultWithCopyButton = ({ result, isMobile }) => {
   }
 
   return (
-    <div className="flex items-center justify-center group">
+    <div className="flex items-center justify-center group relative">
       <span 
         className="px-4 py-2 inline-flex text-2xl leading-5 font-semibold rounded-lg bg-green-100 text-green-800 cursor-pointer transition-colors duration-150 ease-in-out group-hover:bg-green-200"
         onClick={copyToClipboard}
@@ -66,14 +66,14 @@ const ResultWithCopyButton = ({ result, isMobile }) => {
         {result}
       </span>
       {copied && (
-        <span className="absolute mt-10 text-sm text-green-600 font-medium bg-white px-2 py-1 rounded shadow">¡Copiado!</span>
+        <span className="absolute -bottom-6 text-xs text-green-600 font-medium bg-white px-2 py-1 rounded shadow">¡Copiado!</span>
       )}
       <button
         onClick={copyToClipboard}
-        className="ml-2 p-1 rounded-full hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200"
+        className="ml-1 p-1 rounded-full hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200"
         title="Copiar al portapapeles"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500 hover:text-indigo-600" viewBox="0 0 20 20" fill="currentColor">
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-gray-500 hover:text-indigo-600" viewBox="0 0 20 20" fill="currentColor">
           <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
           <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
         </svg>
