@@ -1,128 +1,274 @@
 import requests
 from bs4 import BeautifulSoup
+from concurrent.futures import ThreadPoolExecutor, as_completed, TimeoutError
 from datetime import datetime, timedelta
 import pytz
+import sys
 from cachetools import TTLCache, cached
 import logging
 
 logging.basicConfig(level=logging.INFO)
 
-# Caché que expira después de 24 horas
-cache = TTLCache(maxsize=100, ttl=86400)  # 86400 segundos = 24 horas
+# Crear un caché que expire después de 24 horas
+cache = TTLCache(maxsize=100, ttl=300)  # 300 segundos = 5minutos
 
-# Definir la lista de estados
-STATES = [
-    'tennessee', 'texas', 'maryland', 'ohio', 'georgia', 'new-jersey', 'south-carolina', 'michigan',
-    'maine', 'new-hampshire', 'iowa', 'rhode-island', 'kentucky', 'indiana', 'florida',
-    'pennsylvania', 'tennessee-2', 'texas-2', 'illinois', 'missouri', 'district-of-columbia',
-    'massachusetts', 'arkansas', 'virginia', 'kansas', 'delaware', 'connecticut', 'new-york',
-    'wisconsin', 'north-carolina', 'new-mexico', 'mississippi', 'colorado', 'oregon',
-    'california', 'idaho'
-]
-
-sorteoHoras = {
-    'tennessee': '10:28:00',
-    'texas': '11:00:00',
-    'maryland': '12:28:00',
-    'ohio': '12:29:00',
-    'georgia': '12:29:00',
-    'michigan': '12:59:00',
-    'new-jersey': '12:59:00',
-    'south-carolina': '12:59:00',
-    'maine': '13:10:00',
-    'new-hampshire': '13:10:00',
-    'indiana': '13:20:00',
-    'iowa': '13:20:00',
-    'kentucky': '13:20:00',
-    'texas-2': '13:27:00',
-    'tennessee-2': '13:28:00',
-    'florida': '13:30:00',
-    'rhode-island': '13:30:00',
-    'pennsylvania': '13:35:00',
-    'illinois': '13:40:00',
-    'missouri': '13:45:00',
-    'district-of-columbia': '13:50:00',
-    'connecticut': '13:57:00',
-    'delaware': '13:58:00',
-    'arkansas': '13:59:00',
-    'virginia': '13:59:00',
-    'massachusetts': '14:00:00',
-    'kansas': '14:10:00',
-    'new-york': '14:30:00',
-    'wisconsin': '14:30:00',
-    'north-carolina': '15:00:00',
-    'new-mexico': '15:00:00',
-    'mississippi': '15:30:00',
-    'colorado': '15:30:00',
-    'california': '16:00:00',
-    'oregon': '16:00:00',
-    'idaho': '16:00:00'
-}
-
-def is_time_to_scrape(state):
-    eastern = pytz.timezone('America/New_York')
-    now = datetime.now(eastern)
-    sorteo_hora = datetime.strptime(sorteoHoras[state], '%H:%M:%S').time()
-    sorteo_datetime = eastern.localize(datetime.combine(now.date(), sorteo_hora))
+def scrape_state_lottery(state):
+    base_state = state.replace('-2', '')
+    url = f"https://www.lotteryusa.com/{base_state}/"
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+    }
     
-    # Buscar desde 5 minutos antes hasta 30 minutos después del sorteo
-    return sorteo_datetime - timedelta(minutes=5) <= now <= sorteo_datetime + timedelta(minutes=30)
+    response = requests.get(url, headers=headers)
+    
+    if response.status_code != 200:
+        return None
+    
+    soup = BeautifulSoup(response.content, 'html.parser')
+    
+    results = {}
+    
+    def get_numbers_and_date(number_selector, date_selector, game):
+        numbers = ''
+        date = ''
+        number_elements = soup.select(number_selector)
+        date_element = soup.select_one(date_selector)
+        
+        if number_elements and date_element:
+            numbers = ''.join([elem.text.strip() for elem in number_elements if elem.text.strip().isdigit()])
+            date = date_element.get('datetime', '').strip()
+            if not date:
+                date = date_element.text.strip()
+            # No intentamos formatear la fecha aquí, la dejamos como está
+            return numbers, date
+        
+        return None, None
+
+    # Configuraciones específicas para cada estado
+    state_configs = {
+        'tennessee': {
+            'Pick 3': {
+                'numbers': 'tr.c-result-card:nth-child(1) > td:nth-child(2) > div:nth-child(1) > ul:nth-child(1) > li',
+                'date': 'tr.c-result-card:nth-child(1) > th:nth-child(1) > div:nth-child(2) > time:nth-child(2)'
+            },
+            'Pick 4': {
+                'numbers': 'tr.c-result-card:nth-child(5) > td:nth-child(2) > div:nth-child(1) > ul:nth-child(1) > li',
+                'date': 'tr.c-result-card:nth-child(5) > th:nth-child(1) > div:nth-child(2) > time:nth-child(2)'
+            }
+        },
+        'district-of-columbia': {
+            'Pick 3': {
+                'numbers': 'tr.c-result-card:nth-child(4) > td:nth-child(2) > div:nth-child(1) > ul:nth-child(1) > li',
+                'date': 'tr.c-result-card:nth-child(4) > th:nth-child(1) > div:nth-child(2) > time:nth-child(2)'
+            },
+            'Pick 4': {
+                'numbers': 'tr.c-result-card:nth-child(8) > td:nth-child(2) > div:nth-child(1) > ul:nth-child(1) > li',
+                'date': 'tr.c-result-card:nth-child(8) > th:nth-child(1) > div:nth-child(2) > time:nth-child(2)'
+            }
+        },
+        'kansas': {
+            'Pick 3': {
+                'numbers': 'tr.c-result-card:nth-child(1) > td:nth-child(2) > div:nth-child(1) > ul:nth-child(1) > li',
+                'date': 'tr.c-result-card:nth-child(1) > th:nth-child(1) > div:nth-child(2) > time:nth-child(2)'
+            }
+        },
+        'oregon': {
+            'Pick 4': {
+                'numbers': 'tr.c-result-card:nth-child(1) > td:nth-child(2) > div:nth-child(1) > ul:nth-child(1) > li',
+                'date': 'tr.c-result-card:nth-child(1) > th:nth-child(1) > div:nth-child(2) > time:nth-child(2)'
+            }
+        },
+        'california': {
+            'Pick 3': {
+                'numbers': 'tr.c-result-card:nth-child(1) > td:nth-child(2) > div:nth-child(1) > ul:nth-child(1) > li',
+                'date': 'tr.c-result-card:nth-child(1) > th:nth-child(1) > div:nth-child(2) > time:nth-child(2)'
+            }
+        },
+        'rhode-island': {
+            'Pick 4': {
+                'numbers': 'tr.c-result-card:nth-child(1) > td:nth-child(2) > div:nth-child(1) > ul:nth-child(1) > li',
+                'date': 'tr.c-result-card:nth-child(1) > th:nth-child(1) > div:nth-child(2) > time:nth-child(2)'
+            }
+        },
+        'colorado': {
+            'Pick 3': {
+                'numbers': 'tr.c-result-card:nth-child(1) > td:nth-child(2) > div:nth-child(1) > ul:nth-child(1) > li',
+                'date': 'tr.c-result-card:nth-child(1) > th:nth-child(1) > div:nth-child(2) > time:nth-child(2)'
+            }
+        },
+        'north-carolina': {
+            'Pick 3': {
+                'numbers': 'tr.c-result-card:nth-child(1) > td:nth-child(2) > div:nth-child(1) > ul:nth-child(1) > li',
+                'date': 'tr.c-result-card:nth-child(1) > th:nth-child(1) > div:nth-child(2) > time:nth-child(2)'
+            },
+            'Pick 4': {
+                'numbers': 'tr.c-result-card:nth-child(4) > td:nth-child(2) > div:nth-child(1) > ul:nth-child(1) > li',
+                'date': 'tr.c-result-card:nth-child(4) > th:nth-child(1) > div:nth-child(2) > time:nth-child(2)'
+            }
+        },
+        'mississippi': {
+            'Pick 3': {
+                'numbers': 'tr.c-result-card:nth-child(1) > td:nth-child(2) > div:nth-child(1) > ul:nth-child(1) > li',
+                'date': 'tr.c-result-card:nth-child(1) > th:nth-child(1) > div:nth-child(2) > time:nth-child(2)'
+            },
+            'Pick 4': {
+                'numbers': 'tr.c-result-card:nth-child(4) > td:nth-child(2) > div:nth-child(1) > ul:nth-child(1) > li',
+                'date': 'tr.c-result-card:nth-child(4) > th:nth-child(1) > div:nth-child(2) > time:nth-child(2)'
+            }
+        },
+        'idaho': {
+            'Pick 3': {
+                'numbers': 'tr.c-result-card:nth-child(1) > td:nth-child(2) > div:nth-child(1) > ul:nth-child(1) > li',
+                'date': 'tr.c-result-card:nth-child(1) > th:nth-child(1) > div:nth-child(2) > time:nth-child(2)'
+            },
+            'Pick 4': {
+                'numbers': 'tr.c-result-card:nth-child(4) > td:nth-child(2) > div:nth-child(1) > ul:nth-child(1) > li',
+                'date': 'tr.c-result-card:nth-child(4) > th:nth-child(1) > div:nth-child(2) > time:nth-child(2)'
+            }
+        },
+        'tennessee-2': {
+            'Pick 3': {
+                'numbers': 'tr.c-result-card:nth-child(3) > td:nth-child(2) > div:nth-child(1) > ul:nth-child(1) > li',
+                'date': 'tr.c-result-card:nth-child(3) > th:nth-child(1) > div:nth-child(2) > time:nth-child(2)'
+            },
+            'Pick 4': {
+                'numbers': 'tr.c-result-card:nth-child(7) > td:nth-child(2) > div:nth-child(1) > ul:nth-child(1) > li',
+                'date': 'tr.c-result-card:nth-child(7) > th:nth-child(1) > div:nth-child(2) > time:nth-child(2)'
+            }
+        },
+        'texas-2': {
+            'Pick 3': {
+                'numbers': 'tr.c-result-card:nth-child(3) > td:nth-child(2) > div:nth-child(1) > ul:nth-child(1) > li',
+                'date': 'tr.c-result-card:nth-child(3) > th:nth-child(1) > div:nth-child(2) > time:nth-child(2)'
+            },
+            'Pick 4': {
+                'numbers': 'tr.c-result-card:nth-child(8) > td:nth-child(2) > div:nth-child(1) > ul:nth-child(1) > li',
+                'date': 'tr.c-result-card:nth-child(8) > th:nth-child(1) > div:nth-child(2) > time:nth-child(2)'
+            }
+        },
+        'georgia': {
+            'Pick 3': {
+                'numbers': 'tr.c-result-card:nth-child(1) > td:nth-child(2) > div:nth-child(1) > ul:nth-child(1) > li',
+                'date': 'tr.c-result-card:nth-child(1) > th:nth-child(1) > div:nth-child(2) > time:nth-child(2)'
+            },
+            'Pick 4': {
+                'numbers': 'tr.c-result-card:nth-child(5) > td:nth-child(2) > div:nth-child(1) > ul:nth-child(1) > li',
+                'date': 'tr.c-result-card:nth-child(5) > th:nth-child(1) > div:nth-child(2) > time:nth-child(2)'
+            }
+        },
+        'florida': {
+            'Pick 3': {
+                'numbers': 'tr.c-result-card:nth-child(4) > td:nth-child(2) > div:nth-child(1) > ul:nth-child(1) > li',
+                'date': 'tr.c-result-card:nth-child(4) > th:nth-child(1) > div:nth-child(2) > time:nth-child(2)'
+            },
+            'Pick 4': {
+                'numbers': 'tr.c-result-card:nth-child(7) > td:nth-child(2) > div:nth-child(1) > ul:nth-child(1) > li',
+                'date': 'tr.c-result-card:nth-child(7) > th:nth-child(1) > div:nth-child(2) > time:nth-child(2)'
+            }
+        },
+        'pennsylvania': {
+            'Pick 3': {
+                'numbers': 'tr.c-result-card:nth-child(4) > td:nth-child(2) > div:nth-child(1) > ul:nth-child(1) > li',
+                'date': 'tr.c-result-card:nth-child(4) > th:nth-child(1) > div:nth-child(2) > time:nth-child(2)'
+            },
+            'Pick 4': {
+                'numbers': 'tr.c-result-card:nth-child(7) > td:nth-child(2) > div:nth-child(1) > ul:nth-child(1) > li',
+                'date': 'tr.c-result-card:nth-child(7) > th:nth-child(1) > div:nth-child(2) > time:nth-child(2)'
+            }
+        },
+        'illinois': {
+            'Pick 3': {
+                'numbers': 'tr.c-result-card:nth-child(1) > td:nth-child(2) > div:nth-child(1) > ul:nth-child(1) > li',
+                'date': 'tr.c-result-card:nth-child(1) > th:nth-child(1) > div:nth-child(2) > time:nth-child(2)'
+            },
+            'Pick 4': {
+                'numbers': 'tr.c-result-card:nth-child(4) > td:nth-child(2) > div:nth-child(1) > ul:nth-child(1) > li',
+                'date': 'tr.c-result-card:nth-child(4) > th:nth-child(1) > div:nth-child(2) > time:nth-child(2)'
+            }
+        },
+        'texas': {
+            'Pick 3': {
+                'numbers': 'tr.c-result-card:nth-child(1) > td:nth-child(2) > div:nth-child(1) > ul:nth-child(1) > li',
+                'date': 'tr.c-result-card:nth-child(1) > th:nth-child(1) > div:nth-child(2) > time:nth-child(2)'
+            },
+            'Pick 4': {
+                'numbers': 'tr.c-result-card:nth-child(7) > td:nth-child(2) > div:nth-child(1) > ul:nth-child(1) > li',
+                'date': 'tr.c-result-card:nth-child(7) > th:nth-child(1) > div:nth-child(2) > time:nth-child(2)'
+            }
+        },
+        'massachusetts': {
+            'Pick 4': {
+                'numbers': 'tr.c-result-card:nth-child(1) > td:nth-child(2) > div:nth-child(1) > ul:nth-child(1) > li',
+                'date': 'tr.c-result-card:nth-child(1) > th:nth-child(1) > div:nth-child(2) > time:nth-child(2)'
+            }
+        }
+    }
+
+    # Configuración por defecto para los estados no especificados
+    default_config = {
+        'Pick 3': {
+            'numbers': 'tr.c-result-card:nth-child(1) > td:nth-child(2) > div:nth-child(1) > ul:nth-child(1) > li',
+            'date': 'tr.c-result-card:nth-child(1) > th:nth-child(1) > div:nth-child(2) > time:nth-child(2)'
+        },
+        'Pick 4': {
+            'numbers': 'tr.c-result-card:nth-child(4) > td:nth-child(2) > div:nth-child(1) > ul:nth-child(1) > li',
+            'date': 'tr.c-result-card:nth-child(4) > th:nth-child(1) > div:nth-child(2) > time:nth-child(2)'
+        }
+    }
+
+    # Usar la configuración específica del estado si existe, de lo contrario usar la configuración por defecto
+    config = state_configs.get(state, default_config)
+
+    eastern = pytz.timezone('US/Eastern')
+    today = datetime.now(eastern).date()
+    today_str = today.strftime('%Y-%m-%d')  # Formato YYYY-MM-DD
+
+    for game, selectors in config.items():
+        numbers, date_str = get_numbers_and_date(selectors['numbers'], selectors['date'], game)
+        if numbers and date_str:
+            if date_str.startswith(today_str):
+                results[game] = {
+                    'numbers': numbers,
+                    'date': date_str
+                }
+    
+    return {state: results} if results else None  # Solo devuelve resultados si hay alguno para hoy
 
 @cached(cache)
-def scrape_lottery(state):
-    # Aquí implementaremos el scraping real para cada estado
-    # Este es un ejemplo para Tennessee, deberías adaptarlo para cada estado
-    if state == 'tennessee':
-        url = "https://www.tnlottery.com/winning-numbers/"
-        try:
-            response = requests.get(url)
-            soup = BeautifulSoup(response.content, 'html.parser')
-            
-            pick3 = soup.find('div', {'class': 'cash3-mid-day'}).find('p', {'class': 'winning-numbers'}).text.strip()
-            pick4 = soup.find('div', {'class': 'cash4-mid-day'}).find('p', {'class': 'winning-numbers'}).text.strip()
-            
-            return {
-                'Pick 3': pick3,
-                'Pick 4': pick4,
-                'date': datetime.now(pytz.timezone('America/New_York')).isoformat()
-            }
-        except Exception as e:
-            logging.error(f"Error scraping {state}: {e}")
-            return None
-    else:
-        # Para otros estados, implementar lógica similar
-        logging.warning(f"Scraping no implementado para {state}")
-        return None
-
 def scrape_all_lotteries():
-    results = {}
-    for state in STATES:
-        if is_time_to_scrape(state):
-            result = scrape_lottery(state)
-            if result:
-                results[state] = {
-                    'Pick 3': {'numbers': result['Pick 3'], 'date': result['date']},
-                    'Pick 4': {'numbers': result['Pick 4'], 'date': result['date']},
-                    'status': 'found'
-                }
-            else:
-                results[state] = {'status': 'not_available'}
-        else:
-            results[state] = {'status': 'not_time'}
-    return results
-
-# Función para probar el comportamiento
-def test_scraping_time():
-    eastern = pytz.timezone('US/Eastern')
-    current_time = datetime.now(eastern)
-    logging.info(f"Hora actual en Eastern Time: {current_time.strftime('%Y-%m-%d %H:%M:%S')}")
+    logging.info("Iniciando scrape_all_lotteries")
+    states = [
+        'tennessee', 'texas', 'maryland', 'ohio', 'georgia', 'new-jersey', 'south-carolina', 'michigan',
+        'maine', 'new-hampshire', 'iowa', 'rhode-island', 'kentucky', 'indiana', 'florida',
+        'pennsylvania', 'tennessee-2', 'texas-2', 'illinois', 'missouri', 'district-of-columbia',
+        'massachusetts', 'arkansas', 'virginia', 'kansas', 'delaware', 'connecticut', 'new-york',
+        'wisconsin', 'north-carolina', 'new-mexico', 'mississippi', 'colorado', 'oregon',
+        'california', 'idaho'
+    ]
     
-    for state in STATES:
-        if is_time_to_scrape(state):
-            logging.info(f"Es hora de hacer scraping para {state}")
-        else:
-            logging.info(f"No es hora de hacer scraping para {state}")
+    all_results = {}
+    
+    eastern = pytz.timezone('US/Eastern')
+    current_datetime = datetime.now(eastern)
+    current_date = current_datetime.date()
 
-# Llama a esta función para probar
-if __name__ == "__main__":
-    test_scraping_time()
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        future_to_state = {executor.submit(scrape_state_lottery, state): state for state in states}
+        for future in as_completed(future_to_state, timeout=60):
+            state = future_to_state[future]
+            try:
+                result = future.result(timeout=10)
+                if result and result[state]:
+                    all_results.update(result)
+                    logging.info(f"Scraping completado para {state}")
+            except TimeoutError:
+                logging.warning(f"Timeout al procesar el estado {state}")
+            except Exception as exc:
+                logging.error(f"Error al procesar el estado {state}: {exc}")
+
+    logging.info("scrape_all_lotteries completado")
+    return all_results
+
+if __name__ == '__main__':
+    results = scrape_all_lotteries()
+    print(results)
