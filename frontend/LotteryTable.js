@@ -104,6 +104,20 @@ const LotteryTable = ({ results, messages, lastUpdateTime }) => {
     );
   };
 
+  const getStatusMessage = (state) => {
+    const status = results[state]?.status;
+    switch(status) {
+      case 'not_time':
+        return 'Aún no es hora del sorteo';
+      case 'not_available':
+        return 'Resultado no disponible';
+      case 'found':
+        return 'Resultado encontrado';
+      default:
+        return 'Estado desconocido';
+    }
+  };
+
   const sortedAndFilteredStates = useMemo(() => {
     return stateOrder
       .filter(state => state.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -177,7 +191,7 @@ const LotteryTable = ({ results, messages, lastUpdateTime }) => {
               {sorteoHoras[state] || 'N/A'}
             </td>
             <td className="px-4 py-2 text-center text-sm text-gray-500">
-              {results[state]?.status || 'N/A'}
+              {getStatusMessage(state)}
             </td>
             <td className="px-4 py-2 text-center text-sm text-gray-500">
               {formatDateTime(results[state]?.['Pick 3']?.date || results[state]?.['Pick 4']?.date) || 'N/A'}

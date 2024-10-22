@@ -68,7 +68,17 @@ function Dashboard() {
       setLastUpdateTime(data.date);
       localStorage.setItem('lastUpdateTime', data.date);
       
-      setResults(data.results);
+      // Actualizar solo los resultados que han cambiado
+      setResults(prevResults => {
+        const newResults = { ...prevResults };
+        for (const [state, result] of Object.entries(data.results)) {
+          if (JSON.stringify(newResults[state]) !== JSON.stringify(result)) {
+            newResults[state] = result;
+          }
+        }
+        return newResults;
+      });
+      
       localStorage.setItem('lotteryResults', JSON.stringify(data.results));
     } catch (err) {
       console.error('Error:', err);
