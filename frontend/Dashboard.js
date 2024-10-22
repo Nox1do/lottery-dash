@@ -67,18 +67,17 @@ function Dashboard() {
 
       // Convertir la fecha UTC del servidor a Eastern Time
       const serverDate = new Date(data.date);
-      const easternTime = new Date(serverDate.toLocaleString('en-US', { timeZone: 'America/New_York' }));
       
       // Formatear la fecha para mostrarla en Eastern Time
-      const formattedDate = easternTime.toLocaleString('en-US', {
+      const formattedDate = serverDate.toLocaleString('en-US', {
+        timeZone: 'America/New_York',
         year: 'numeric',
         month: '2-digit',
         day: '2-digit',
         hour: '2-digit',
         minute: '2-digit',
         second: '2-digit',
-        hour12: true,
-        timeZone: 'America/New_York'
+        hour12: true
       });
 
       setLastUpdateTime(formattedDate);
