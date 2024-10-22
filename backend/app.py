@@ -3,6 +3,7 @@ from flask_cors import CORS
 from scraper import scrape_all_lotteries
 import json
 from datetime import datetime, timedelta
+import pytz
 
 app = Flask(__name__)
 CORS(app)
@@ -18,7 +19,7 @@ def home():
 def get_lottery_results():
     global last_scrape_time, cached_results
     
-    current_time = datetime.now()
+    current_time = datetime.now(pytz.utc)
     
     if last_scrape_time is None or (current_time - last_scrape_time) > timedelta(minutes=5):
         results = scrape_all_lotteries()
@@ -29,7 +30,7 @@ def get_lottery_results():
     
     return jsonify({
         'results': results,
-        'date': current_time.strftime('%Y-%m-%d %H:%M:%S')
+        'date': current_time.isoformat()
     })
 
 @app.route('/api/test')
