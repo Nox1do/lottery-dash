@@ -133,7 +133,7 @@ const LotteryTable = ({ results, messages, lastUpdateTime }) => {
               <ResultWithCopyButton result={results[`${state}-Pick 4`]?.result} isMobile={false} />
             </td>
             <td className="px-4 py-2 text-center text-sm text-gray-500">
-              {formatDateTime(results[`${state}-Pick 3`]?.date)}
+              {formatDateTime(results[`${state}-Pick 3`]?.date || results[`${state}-Pick 4`]?.date) || 'N/A'}
             </td>
           </tr>
         ))}
