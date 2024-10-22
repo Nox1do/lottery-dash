@@ -9,8 +9,8 @@ import logging
 
 logging.basicConfig(level=logging.INFO)
 
-# Crear un caché que expire después de 24 horas
-cache = TTLCache(maxsize=100, ttl=300)  # 300 segundos = 5minutos
+# Crear un caché que expire después de 5 minutos
+cache = TTLCache(maxsize=100, ttl=300)
 
 def scrape_state_lottery(state):
     base_state = state.replace('-2', '')
@@ -259,12 +259,12 @@ def scrape_all_lotteries():
         all_results = {}
         states_to_scrape = states
 
-    with ThreadPoolExecutor(max_workers=5) as executor:
+    with ThreadPoolExecutor(max_workers=10) as executor:
         future_to_state = {executor.submit(scrape_state_lottery, state): state for state in states_to_scrape}
-        for future in as_completed(future_to_state, timeout=60):
+        for future in as_completed(future_to_state, timeout=120):
             state = future_to_state[future]
             try:
-                result = future.result(timeout=10)
+                result = future.result(timeout=30)
                 if result and result[state]:
                     all_results.update(result)
                     logging.info(f"Scraping completado para {state}")
@@ -276,7 +276,7 @@ def scrape_all_lotteries():
     # Actualizar la caché con los nuevos resultados
     cache['lottery_results'] = {'date': current_date, 'results': all_results}
 
-    logging.info("scrape_all_lotteries completado")
+    logging.info(f"scrape_all_lotteries completado. Estados procesados: {len(all_results)}/{len(states)}")
     return all_results
 
 if __name__ == '__main__':
