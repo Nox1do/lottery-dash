@@ -62,13 +62,18 @@ sorteoHoras = {
 }
 
 def is_time_to_scrape(state):
-    eastern = pytz.timezone('US/Eastern')
+    eastern = pytz.timezone('America/New_York')
     now = datetime.now(eastern)
-    sorteo_hora = datetime.strptime(sorteoHoras[state], '%H:%M:%S').time()
+    sorteo_hora_str = sorteoHoras.get(state)
+    if not sorteo_hora_str:
+        return False
+    sorteo_hora = datetime.strptime(sorteo_hora_str, '%H:%M:%S').time()
     sorteo_datetime = eastern.localize(datetime.combine(now.date(), sorteo_hora))
     
     # Buscar desde 5 minutos antes hasta 30 minutos después del sorteo
-    return sorteo_datetime - timedelta(minutes=5) <= now <= sorteo_datetime + timedelta(minutes=30)
+    window_start = sorteo_datetime - timedelta(minutes=5)
+    window_end = sorteo_datetime + timedelta(minutes=30)
+    return window_start <= now <= window_end
 
 @cached(cache)
 def scrape_state_lottery(state):
@@ -88,47 +93,35 @@ def scrape_state_lottery(state):
     return {state: results if results else {'status': 'not_found'}}
 
 def scrape_lottery(state):
-    eastern = pytz.timezone('US/Eastern')
-    current_time = datetime.now(eastern)
-    
-    # Implementa aquí la lógica de scraping para cada estado
-    # Este es solo un ejemplo, deberás adaptarlo según tus necesidades
-    url = f"https://example.com/lottery/{state}"
-    response = requests.get(url)
-    soup = BeautifulSoup(response.text, 'html.parser')
-    
-    # Aquí deberías extraer los números de Pick 3 y Pick 4
-    # Este es un ejemplo, ajústalo según la estructura real de la página
-    pick3 = soup.find('div', class_='pick3').text.strip()
-    pick4 = soup.find('div', class_='pick4').text.strip()
-    
-    return {
-        'Pick 3': pick3,
-        'Pick 4': pick4,
-        'date': current_time.strftime('%Y-%m-%d %H:%M:%S')
-    }
+    # Implementación específica para scraping de cada lotería
+    # Ejemplo ficticio
+    try:
+        # Simulación de scraping
+        time.sleep(1)  # Simular tiempo de respuesta
+        return {
+            'Pick 3': '123',
+            'Pick 4': '1234',
+            'date': datetime.now(pytz.timezone('America/New_York')).isoformat()
+        }
+    except Exception as e:
+        print(f"Error scraping {state}: {e}")
+        return None
 
 def scrape_all_lotteries():
     results = {}
-    current_time = datetime.now(pytz.utc)
-    
     for state in STATES:
         if is_time_to_scrape(state):
-            try:
-                result = scrape_lottery(state)
+            result = scrape_lottery(state)
+            if result:
                 results[state] = {
                     'Pick 3': {'numbers': result['Pick 3'], 'date': result['date']},
                     'Pick 4': {'numbers': result['Pick 4'], 'date': result['date']},
                     'status': 'found'
                 }
-            except Exception as e:
-                logging.error(f"Error scraping {state}: {str(e)}")
+            else:
                 results[state] = {'status': 'not_available'}
         else:
             results[state] = {'status': 'not_time'}
-    
-    results['scrape_time'] = current_time.strftime('%Y-%m-%dT%H:%M:%S.%fZ')  # Formato ISO8601 sin offset
-    logging.info(f"Scraping realizado a las {results['scrape_time']} UTC")
     return results
 
 # Función para probar el comportamiento
