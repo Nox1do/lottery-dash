@@ -92,21 +92,6 @@ def scrape_state_lottery(state):
 
     return {state: results if results else {'status': 'not_found'}}
 
-def scrape_lottery(state):
-    # Implementación específica para scraping de cada lotería
-    # Ejemplo ficticio
-    try:
-        # Simulación de scraping
-        time.sleep(1)  # Simular tiempo de respuesta
-        return {
-            'Pick 3': '123',
-            'Pick 4': '1234',
-            'date': datetime.now(pytz.timezone('America/New_York')).isoformat()
-        }
-    except Exception as e:
-        print(f"Error scraping {state}: {e}")
-        return None
-
 def scrape_all_lotteries():
     results = {}
     for state in STATES:
