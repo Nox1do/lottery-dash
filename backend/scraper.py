@@ -99,14 +99,20 @@ def scrape_lottery(state):
     pick3 = soup.find('div', class_='pick3').text.strip()
     pick4 = soup.find('div', class_='pick4').text.strip()
     
+    eastern = pytz.timezone('US/Eastern')
+    current_time = datetime.now(eastern)
+    
     return {
         'Pick 3': pick3,
         'Pick 4': pick4,
-        'date': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        'date': current_time.strftime('%Y-%m-%d %H:%M:%S')
     }
 
 def scrape_all_lotteries():
     results = {}
+    eastern = pytz.timezone('US/Eastern')
+    current_time = datetime.now(eastern)
+    
     for state in STATES:
         if is_time_to_scrape(state):
             try:
@@ -121,4 +127,6 @@ def scrape_all_lotteries():
                 results[state] = {'status': 'not_available'}
         else:
             results[state] = {'status': 'not_time'}
+    
+    results['scrape_time'] = current_time.strftime('%Y-%m-%d %H:%M:%S')
     return results
