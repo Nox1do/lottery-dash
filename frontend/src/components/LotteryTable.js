@@ -54,24 +54,6 @@ const sorteoHoras = {
   'idaho': '4:00:00 PM'
 };
 
-const getStatusMessage = (state) => {
-  const status = results[state]?.status;
-  switch(status) {
-    case 'not_available':
-      return 'Aún no disponible';
-    case 'not_found':
-      return 'Resultado no encontrado';
-    case 'timeout':
-      return 'Tiempo de espera agotado';
-    case 'error':
-      return 'Error al buscar';
-    default:
-      return results[state]?.['Pick 3']?.numbers || results[state]?.['Pick 4']?.numbers 
-        ? 'Resultado encontrado' 
-        : 'Estado desconocido';
-  }
-};
-
 const LotteryTable = ({ results, messages, lastUpdateTime }) => {
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -120,6 +102,24 @@ const LotteryTable = ({ results, messages, lastUpdateTime }) => {
         )}
       </div>
     );
+  };
+
+  const getStatusMessage = (state) => {
+    const status = results[state]?.status;
+    switch(status) {
+      case 'not_available':
+        return 'Aún no disponible';
+      case 'not_found':
+        return 'Resultado no encontrado';
+      case 'timeout':
+        return 'Tiempo de espera agotado';
+      case 'error':
+        return 'Error al buscar';
+      default:
+        return results[state]?.['Pick 3']?.numbers || results[state]?.['Pick 4']?.numbers 
+          ? 'Resultado encontrado' 
+          : 'Estado desconocido';
+    }
   };
 
   const sortedAndFilteredStates = useMemo(() => {
