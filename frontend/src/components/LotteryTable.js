@@ -54,6 +54,24 @@ const sorteoHoras = {
   'idaho': '4:00:00 PM'
 };
 
+const getStatusMessage = (state) => {
+  const status = results[state]?.status;
+  switch(status) {
+    case 'not_available':
+      return 'Aún no disponible';
+    case 'not_found':
+      return 'Resultado no encontrado';
+    case 'timeout':
+      return 'Tiempo de espera agotado';
+    case 'error':
+      return 'Error al buscar';
+    default:
+      return results[state]?.['Pick 3']?.numbers || results[state]?.['Pick 4']?.numbers 
+        ? 'Resultado encontrado' 
+        : 'Estado desconocido';
+  }
+};
+
 const LotteryTable = ({ results, messages, lastUpdateTime }) => {
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -157,6 +175,7 @@ const LotteryTable = ({ results, messages, lastUpdateTime }) => {
           <th className="px-4 py-2 text-center text-xl font-bold">Pick 3</th>
           <th className="px-4 py-2 text-center text-xl font-bold">Pick 4</th>
           <th className="px-4 py-2 text-center text-xl font-bold">Hora del Sorteo</th>
+          <th className="px-4 py-2 text-center text-xl font-bold">Estado</th>
           <th className="px-4 py-2 text-center text-xl font-bold">Última Actualización</th>
         </tr>
       </thead>
@@ -167,16 +186,19 @@ const LotteryTable = ({ results, messages, lastUpdateTime }) => {
               {(stateNames[state] || state.replace(/-/g, ' ')).split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ')}
             </td>
             <td className="px-4 py-2 text-center">
-              <ResultWithCopyButton result={results[`${state}-Pick 3`]?.result} isMobile={false} />
+              <ResultWithCopyButton result={results[state]?.['Pick 3']?.numbers} isMobile={false} />
             </td>
             <td className="px-4 py-2 text-center">
-              <ResultWithCopyButton result={results[`${state}-Pick 4`]?.result} isMobile={false} />
+              <ResultWithCopyButton result={results[state]?.['Pick 4']?.numbers} isMobile={false} />
             </td>
             <td className="px-4 py-2 text-center text-sm text-gray-500">
               {sorteoHoras[state] || 'N/A'}
             </td>
             <td className="px-4 py-2 text-center text-sm text-gray-500">
-              {formatDateTime(results[`${state}-Pick 3`]?.date || results[`${state}-Pick 4`]?.date) || 'N/A'}
+              {getStatusMessage(state)}
+            </td>
+            <td className="px-4 py-2 text-center text-sm text-gray-500">
+              {formatDateTime(results[state]?.['Pick 3']?.date || results[state]?.['Pick 4']?.date) || 'N/A'}
             </td>
           </tr>
         ))}
