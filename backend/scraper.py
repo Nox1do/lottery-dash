@@ -144,5 +144,5 @@ def test_scraping_time():
         else:
             logging.info(f"No es hora de hacer scraping para {state}")
 
-# Llama a esta función para probar
+# Llama a esta función para probar bien
 test_scraping_time()
