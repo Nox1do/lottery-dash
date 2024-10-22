@@ -1,7 +1,8 @@
 import React, { useState, useCallback, useMemo } from 'react';
 
+// Mantenemos las constantes en el frontend para la UI
 const stateOrder = [
- 'tennessee', 'texas', 'maryland', 'ohio', 'georgia', 'new-jersey', 'south-carolina', 'michigan',
+  'tennessee', 'texas', 'maryland', 'ohio', 'georgia', 'new-jersey', 'south-carolina', 'michigan',
   'maine', 'new-hampshire', 'kentucky', 'indiana', 'iowa', 'rhode-island', 'florida',
   'pennsylvania', 'tennessee-2', 'texas-2', 'illinois', 'missouri', 'district-of-columbia',
   'massachusetts', 'arkansas', 'virginia', 'kansas', 'delaware', 'connecticut', 'new-york',

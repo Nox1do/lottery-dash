@@ -7,6 +7,7 @@ import sys
 from cachetools import TTLCache, cached
 import logging
 from scheduler import LotteryScheduler
+from constants import sorteoHoras, stateOrder
 
 logging.basicConfig(level=logging.INFO)
 

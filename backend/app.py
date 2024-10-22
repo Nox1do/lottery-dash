@@ -1,6 +1,7 @@
 from flask import Flask, jsonify
 from flask_cors import CORS
-from scraper import scrape_all_lotteries, sorteoHoras
+from scraper import scrape_all_lotteries
+from constants import sorteoHoras, stateOrder
 from datetime import datetime
 import pytz
 import os
@@ -34,30 +35,6 @@ def get_lottery_results():
         eastern = pytz.timezone('US/Eastern')
         current_time = datetime.now(eastern)
         
-        for state, state_results in results.items():
-            for lottery, lottery_result in state_results.items():
-                if 'date' in lottery_result:
-                    date_str = lottery_result['date']
-                    try:
-                        date_obj = datetime.strptime(date_str, '%Y-%m-%dT%H:%M:%S%z')
-                    except ValueError:
-                        try:
-                            date_obj = datetime.strptime(date_str, '%Y-%m-%d')
-                            date_obj = eastern.localize(date_obj)
-                        except ValueError:
-                            date_parts = date_str.split('T')
-                            if len(date_parts) == 2:
-                                try:
-                                    date_obj = datetime.strptime(date_parts[0], '%Y-%m-%d')
-                                    date_obj = eastern.localize(date_obj)
-                                except ValueError:
-                                    logger.error(f"Error al parsear la fecha para {state} - {lottery}: {date_str}")
-                                    date_obj = current_time
-                            else:
-                                logger.error(f"Error al parsear la fecha para {state} - {lottery}: {date_str}")
-                                date_obj = current_time
-                    lottery_result['date'] = date_obj.isoformat()
-        
         response = {
             "date": current_time.isoformat(),
             "results": results,
@@ -68,7 +45,7 @@ def get_lottery_results():
         logger.info("Resultados de la lotería procesados exitosamente")
         return jsonify(response)
     except Exception as e:
-        logger.error(f"Error: {str(e)}")
+        logger.error(f"Error al procesar los resultados de la lotería: {str(e)}")
         return jsonify({"error": "Error Interno del Servidor"}), 500
 
 if __name__ == '__main__':
