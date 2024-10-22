@@ -1,70 +1,44 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import LotteryTable from './LotteryTable'; // Asegúrate de importar el componente correcto
 
-const LotteryResults = ({ results, messages }) => {
-  const formatDateTime = (date) => {
-    if (!date) return 'N/A';
-    const dateObj = new Date(date);
-    return isNaN(dateObj.getTime()) ? 'N/A' : dateObj.toLocaleString('en-US', {
-      timeZone: 'America/New_York',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
-    });
-  };
+const LotteryResults = () => {
+  const [results, setResults] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [messages, setMessages] = useState({});
+  const [lastUpdateTime, setLastUpdateTime] = useState(null);
 
-  const getStatusMessage = (status) => {
-    switch(status) {
-      case 'not_time':
-        return 'Aún no es hora del sorteo';
-      case 'not_available':
-        return 'Resultado no disponible';
-      case 'found':
-        return 'Resultado encontrado';
-      default:
-        return 'Estado desconocido';
-    }
-  };
+  useEffect(() => {
+    const fetchResults = async () => {
+      try {
+        const response = await axios.get('https://lottery-dash.onrender.com/api/lottery-results');
+        console.log('Datos recibidos:', response.data);  // Log para depuración
+        setResults(response.data.results);
+        setMessages(response.data.messages);
+        setLastUpdateTime(response.data.lastUpdateTime);
+        setLoading(false);
+      } catch (err) {
+        console.error('Error al cargar los resultados:', err);  // Log de error detallado
+        setError('Error al cargar los resultados de la lotería');
+        setLoading(false);
+      }
+    };
+
+    fetchResults();
+  }, []);
+
+  if (loading) return <div className="text-center py-4">Cargando resultados...</div>;
+  if (error) return <div className="text-center py-4 text-red-600">{error}</div>;
 
   return (
-    <div className="space-y-4">
-      {Object.entries(results).map(([state, data]) => (
-        <div key={state} className="bg-white shadow overflow-hidden sm:rounded-lg">
-          <div className="px-4 py-5 sm:px-6">
-            <h3 className="text-lg leading-6 font-medium text-gray-900">{state}</h3>
-            <p className="mt-1 max-w-2xl text-sm text-gray-500">{getStatusMessage(data.status)}</p>
-          </div>
-          <div className="border-t border-gray-200 px-4 py-5 sm:p-0">
-            <dl className="sm:divide-y sm:divide-gray-200">
-              <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                <dt className="text-sm font-medium text-gray-500">Pick 3</dt>
-                <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                  {data['Pick 3']?.numbers || 'N/A'}
-                </dd>
-              </div>
-              <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                <dt className="text-sm font-medium text-gray-500">Pick 4</dt>
-                <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                  {data['Pick 4']?.numbers || 'N/A'}
-                </dd>
-              </div>
-              <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                <dt className="text-sm font-medium text-gray-500">Última actualización</dt>
-                <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                  {formatDateTime(data['Pick 3']?.date || data['Pick 4']?.date)}
-                </dd>
-              </div>
-            </dl>
-          </div>
-        </div>
-      ))}
-      {messages.general && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-          <span className="block sm:inline">{messages.general}</span>
-        </div>
-      )}
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold text-center text-indigo-600 mb-8">Resultados de la Lotería</h1>
+      <LotteryTable 
+        results={results} 
+        messages={messages} 
+        lastUpdateTime={lastUpdateTime} 
+      />
     </div>
   );
 };

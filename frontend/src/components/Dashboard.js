@@ -23,19 +23,38 @@ function Dashboard() {
   });
   const [isUpdating, setIsUpdating] = useState(false);
 
-  const formatDateTimeFrontend = (date) => {
-    if (!date) return 'N/A';
-    const dateObj = new Date(date);
-    return isNaN(dateObj.getTime()) ? 'N/A' : dateObj.toLocaleString('es-ES', { 
-      timeZone: 'America/New_York',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
-    });
-  };
+  const processResult = useCallback((state, lottery, result, serverDate) => {
+    if (result && result.numbers && result.date) {
+      const resultDate = new Date(result.date);
+      const serverDateTime = new Date(serverDate);
+      
+      resultDate.setHours(serverDateTime.getHours());
+      resultDate.setMinutes(serverDateTime.getMinutes());
+      resultDate.setSeconds(serverDateTime.getSeconds());
+
+      const formattedDate = resultDate.toLocaleString('en-US', { 
+        timeZone: 'America/New_York',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+      return {
+        result: { 
+          result: result.numbers, 
+          date: formattedDate
+        },
+        message: "Resultados Actualizados"
+      };
+    } else {
+      return {
+        result: { result: null, date: null },
+        message: "N/A"
+      };
+    }
+  }, []);
 
   const fetchResults = useCallback(async () => {
     setLoading(true);
@@ -46,28 +65,54 @@ function Dashboard() {
       }
       const data = await response.json();
 
-      setLastUpdateTime(formatDateTimeFrontend(data.scrape_time));
-      localStorage.setItem('lastUpdateTime', formatDateTimeFrontend(data.scrape_time));
-      
-      // Actualizar solo los resultados que han cambiado
-      setResults(prevResults => {
-        const newResults = { ...prevResults };
-        for (const [state, result] of Object.entries(data.results)) {
-          if (JSON.stringify(newResults[state]) !== JSON.stringify(result)) {
-            newResults[state] = result;
-          }
-        }
-        return newResults;
+      const serverUpdateTime = new Date(data.date).toLocaleString('en-US', { 
+        timeZone: 'America/New_York',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
       });
+      setLastUpdateTime(serverUpdateTime);
+      localStorage.setItem('lastUpdateTime', serverUpdateTime);
       
-      localStorage.setItem('lotteryResults', JSON.stringify(data.results));
+      const newResults = {};
+      const newMessages = {};
+
+      STATES.forEach(state => {
+        if (data.results[state]) {
+          LOTTERIES.forEach(lottery => {
+            const key = `${state}-${lottery}`;
+            const result = data.results[state][lottery];
+            if (result) {
+              const { result: processedResult, message } = processResult(state, lottery, result, data.date);
+              newResults[key] = processedResult;
+              newMessages[key] = message;
+            } else {
+              newResults[key] = { result: null, date: null };
+              newMessages[key] = "N/A";
+            }
+          });
+        } else {
+          LOTTERIES.forEach(lottery => {
+            const key = `${state}-${lottery}`;
+            newResults[key] = { result: null, date: null };
+            newMessages[key] = "N/A";
+          });
+        }
+      });
+
+      setResults(newResults);
+      localStorage.setItem('lotteryResults', JSON.stringify(newResults));
+      setMessages(newMessages);
     } catch (err) {
       console.error('Error:', err);
       setMessages({ general: `Error: ${err.message}` });
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [processResult]);
 
   useEffect(() => {
     fetchResults();
