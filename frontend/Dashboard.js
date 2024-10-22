@@ -69,7 +69,7 @@ function Dashboard() {
       const serverDate = new Date(data.date);
       
       // Formatear la fecha para mostrarla en Eastern Time
-      const formattedDate = serverDate.toLocaleString('en-US', {
+      const formattedDate = new Intl.DateTimeFormat('en-US', {
         timeZone: 'America/New_York',
         year: 'numeric',
         month: '2-digit',
@@ -78,7 +78,7 @@ function Dashboard() {
         minute: '2-digit',
         second: '2-digit',
         hour12: true
-      });
+      }).format(serverDate);
 
       setLastUpdateTime(formattedDate);
       localStorage.setItem('lastUpdateTime', formattedDate);
@@ -88,6 +88,23 @@ function Dashboard() {
         const newResults = { ...prevResults };
         for (const [state, result] of Object.entries(data.results)) {
           if (JSON.stringify(newResults[state]) !== JSON.stringify(result)) {
+            if (result.status === 'found') {
+              // Convertir las fechas de los resultados a Eastern Time
+              ['Pick 3', 'Pick 4'].forEach(game => {
+                if (result[game] && result[game].date) {
+                  result[game].date = new Intl.DateTimeFormat('en-US', {
+                    timeZone: 'America/New_York',
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: true
+                  }).format(new Date(result[game].date));
+                }
+              });
+            }
             newResults[state] = result;
           }
         }
