@@ -1,9 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import LotteryTable from './LotteryTable';
 
-// Eliminamos la importación de Heroicons
-// import { ArrowPathIcon } from '@heroicons/react/24/solid';
-
 const LOTTERIES = ['Pick 3', 'Pick 4'];
 const STATES = [
   'tennessee', 'texas', 'maryland', 'ohio', 'georgia', 'new-jersey', 'south-carolina', 'michigan',
@@ -54,7 +51,7 @@ function Dashboard() {
     } else {
       return {
         result: { result: null, date: null },
-        message: "Resultados no disponibles"
+        message: "N/A"
       };
     }
   }, []);
@@ -62,69 +59,33 @@ function Dashboard() {
   const fetchResults = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:5000/api/lottery-results');
+      const response = await fetch('https://lottery-dash.onrender.com/api/lottery-results');
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
 
-      const serverUpdateTime = new Date(data.date).toLocaleString('en-US', { 
-        timeZone: 'America/New_York',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-      });
-      setLastUpdateTime(serverUpdateTime);
-      localStorage.setItem('lastUpdateTime', serverUpdateTime);
+      setLastUpdateTime(data.date);
+      localStorage.setItem('lastUpdateTime', data.date);
       
-      const newResults = {};
-      const newMessages = {};
-
-      STATES.forEach(state => {
-        if (data.results[state]) {
-          LOTTERIES.forEach(lottery => {
-            const key = `${state}-${lottery}`;
-            const result = data.results[state][lottery];
-            if (result) {
-              const { result: processedResult, message } = processResult(state, lottery, result, data.date);
-              newResults[key] = processedResult;
-              newMessages[key] = message;
-            } else {
-              newResults[key] = { result: null, date: null };
-              newMessages[key] = "Resultados no disponibles";
-            }
-          });
-        } else {
-          LOTTERIES.forEach(lottery => {
-            const key = `${state}-${lottery}`;
-            newResults[key] = { result: null, date: null };
-            newMessages[key] = "Resultados no disponibles";
-          });
-        }
-      });
-
-      setResults(newResults);
-      localStorage.setItem('lotteryResults', JSON.stringify(newResults));
-      setMessages(newMessages);
+      setResults(data.results);
+      localStorage.setItem('lotteryResults', JSON.stringify(data.results));
     } catch (err) {
       console.error('Error:', err);
       setMessages({ general: `Error: ${err.message}` });
     } finally {
       setLoading(false);
     }
-  }, [processResult]);
+  }, []);
 
   useEffect(() => {
     fetchResults();
-    const interval = setInterval(fetchResults, 60000);
+    const interval = setInterval(fetchResults, 120000); // 2 minutos
     return () => clearInterval(interval);
   }, [fetchResults]);
 
   const handleUpdate = useCallback(async () => {
-    if (isUpdating) return; // Evita múltiples clics
+    if (isUpdating) return;
     setIsUpdating(true);
     
     const startTime = Date.now();
@@ -135,7 +96,6 @@ function Dashboard() {
       const elapsedTime = Date.now() - startTime;
       const remainingTime = Math.max(2000 - elapsedTime, 0);
       
-      // Espera el tiempo restante para completar 2 segundos
       await new Promise(resolve => setTimeout(resolve, remainingTime));
       
       setIsUpdating(false);
@@ -181,7 +141,7 @@ function Dashboard() {
             {isUpdating ? 'Actualizando...' : 'Actualizar Resultados'}
           </button>
         </div>
-        <div className="bg-gray-50 rounded-lg p-6 overflow-hidden">
+        <div className="bg-white rounded-lg shadow-lg p-6 overflow-x-auto">
           <LotteryTable 
             results={results} 
             messages={messages} 
