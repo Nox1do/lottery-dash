@@ -65,19 +65,20 @@ function Dashboard() {
       }
       const data = await response.json();
 
-      // Convertir la fecha del servidor a objeto Date
-      const serverDate = new Date(data.date + ' UTC');
+      // Convertir la fecha UTC del servidor a Eastern Time
+      const serverDate = new Date(data.date);
+      const easternTime = new Date(serverDate.toLocaleString('en-US', { timeZone: 'America/New_York' }));
       
       // Formatear la fecha para mostrarla en Eastern Time
-      const formattedDate = serverDate.toLocaleString('en-US', {
-        timeZone: 'America/New_York',
+      const formattedDate = easternTime.toLocaleString('en-US', {
         year: 'numeric',
         month: '2-digit',
         day: '2-digit',
         hour: '2-digit',
         minute: '2-digit',
         second: '2-digit',
-        hour12: true
+        hour12: true,
+        timeZone: 'America/New_York'
       });
 
       setLastUpdateTime(formattedDate);
