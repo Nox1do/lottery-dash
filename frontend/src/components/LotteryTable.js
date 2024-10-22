@@ -15,6 +15,45 @@ const stateNames = {
   'texas-2': 'TEXAS 2',
 };
 
+const sorteoHoras = {
+  'tennessee': '10:28:00 AM',
+  'texas': '11:00:00 AM',
+  'maryland': '12:28:00 PM',
+  'ohio': '12:29:00 PM',
+  'georgia': '12:29:00 PM',
+  'michigan': '12:59:00 PM',
+  'new-jersey': '12:59:00 PM',
+  'south-carolina': '12:59:00 PM',
+  'maine': '1:10:00 PM',
+  'new-hampshire': '1:10:00 PM',
+  'indiana': '1:20:00 PM',
+  'iowa': '1:20:00 PM',
+  'kentucky': '1:20:00 PM',
+  'texas-2': '1:27:00 PM',
+  'tennessee-2': '1:28:00 PM',
+  'florida': '1:30:00 PM',
+  'rhode-island': '1:30:00 PM',
+  'pennsylvania': '1:35:00 PM',
+  'illinois': '1:40:00 PM',
+  'missouri': '1:45:00 PM',
+  'district-of-columbia': '1:50:00 PM',
+  'connecticut': '1:57:00 PM',
+  'delaware': '1:58:00 PM',
+  'arkansas': '1:59:00 PM',
+  'virginia': '1:59:00 PM',
+  'massachusetts': '2:00:00 PM',
+  'kansas': '2:10:00 PM',
+  'new-york': '2:30:00 PM',
+  'wisconsin': '2:30:00 PM',
+  'north-carolina': '3:00:00 PM',
+  'new-mexico': '3:00:00 PM',
+  'mississippi': '3:30:00 PM',
+  'colorado': '3:30:00 PM',
+  'california': '4:00:00 PM',
+  'oregon': '4:00:00 PM',
+  'idaho': '4:00:00 PM'
+};
+
 const LotteryTable = ({ results, messages, lastUpdateTime }) => {
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -117,6 +156,7 @@ const LotteryTable = ({ results, messages, lastUpdateTime }) => {
           <th className="px-4 py-2 text-left text-xl font-bold">Estado</th>
           <th className="px-4 py-2 text-center text-xl font-bold">Pick 3</th>
           <th className="px-4 py-2 text-center text-xl font-bold">Pick 4</th>
+          <th className="px-4 py-2 text-center text-xl font-bold">Hora del Sorteo</th>
           <th className="px-4 py-2 text-center text-xl font-bold">Última Actualización</th>
         </tr>
       </thead>
@@ -131,6 +171,9 @@ const LotteryTable = ({ results, messages, lastUpdateTime }) => {
             </td>
             <td className="px-4 py-2 text-center">
               <ResultWithCopyButton result={results[`${state}-Pick 4`]?.result} isMobile={false} />
+            </td>
+            <td className="px-4 py-2 text-center text-sm text-gray-500">
+              {sorteoHoras[state] || 'N/A'}
             </td>
             <td className="px-4 py-2 text-center text-sm text-gray-500">
               {formatDateTime(results[`${state}-Pick 3`]?.date || results[`${state}-Pick 4`]?.date) || 'N/A'}
