@@ -1,6 +1,6 @@
 from flask import Flask, jsonify
 from flask_cors import CORS
-from scraper import scrape_all_lotteries
+from scraper import scrape_all_lotteries, sorteoHoras
 from datetime import datetime
 import pytz
 import os
@@ -18,6 +18,13 @@ logger = logging.getLogger(__name__)
 def home():
     logger.info("Ruta home accedida")
     return jsonify({"message": "Bienvenido a la API de Lottery Dashboard"}), 200
+
+@app.route('/api/lottery-schedule')
+def get_lottery_schedule():
+    """
+    Nueva ruta para obtener el horario de sorteos
+    """
+    return jsonify(sorteoHoras)
 
 @app.route('/api/lottery-results')
 def get_lottery_results():
@@ -54,20 +61,14 @@ def get_lottery_results():
         response = {
             "date": current_time.isoformat(),
             "results": results,
-            "states_checked": [
-                'tennessee', 'texas', 'maryland', 'ohio', 'georgia', 'new-jersey', 'south-carolina', 'michigan',
-                'maine', 'new-hampshire', 'iowa', 'rhode-island', 'kentucky', 'indiana', 'florida',
-                'pennsylvania', 'tennessee-2', 'texas-2', 'illinois', 'missouri', 'district-of-columbia',
-                'massachusetts', 'arkansas', 'virginia', 'kansas', 'delaware', 'connecticut', 'new-york',
-                'wisconsin', 'north-carolina', 'new-mexico', 'mississippi', 'colorado', 'oregon',
-                'california', 'idaho'
-            ],
+            "schedule": sorteoHoras,
+            "states_checked": stateOrder,
             "states_with_results": list(results.keys())
         }
         logger.info("Resultados de la lotería procesados exitosamente")
         return jsonify(response)
     except Exception as e:
-        logger.error(f"Error al procesar los resultados de la lotería: {str(e)}")
+        logger.error(f"Error: {str(e)}")
         return jsonify({"error": "Error Interno del Servidor"}), 500
 
 if __name__ == '__main__':
