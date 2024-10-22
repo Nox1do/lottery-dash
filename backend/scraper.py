@@ -12,6 +12,16 @@ logging.basicConfig(level=logging.INFO)
 # Caché que expira después de 24 horas
 cache = TTLCache(maxsize=100, ttl=86400)  # 86400 segundos = 24 horas
 
+# Definir la lista de estados
+STATES = [
+    'tennessee', 'texas', 'maryland', 'ohio', 'georgia', 'new-jersey', 'south-carolina', 'michigan',
+    'maine', 'new-hampshire', 'iowa', 'rhode-island', 'kentucky', 'indiana', 'florida',
+    'pennsylvania', 'tennessee-2', 'texas-2', 'illinois', 'missouri', 'district-of-columbia',
+    'massachusetts', 'arkansas', 'virginia', 'kansas', 'delaware', 'connecticut', 'new-york',
+    'wisconsin', 'north-carolina', 'new-mexico', 'mississippi', 'colorado', 'oregon',
+    'california', 'idaho'
+]
+
 sorteoHoras = {
     'tennessee': '10:28:00',
     'texas': '11:00:00',
@@ -77,18 +87,37 @@ def scrape_state_lottery(state):
 
     return {state: results if results else {'status': 'not_found'}}
 
+def scrape_lottery(state):
+    # Implementa aquí la lógica de scraping para cada estado
+    # Este es solo un ejemplo, deberás adaptarlo según tus necesidades
+    url = f"https://example.com/lottery/{state}"
+    response = requests.get(url)
+    soup = BeautifulSoup(response.text, 'html.parser')
+    
+    # Aquí deberías extraer los números de Pick 3 y Pick 4
+    # Este es un ejemplo, ajústalo según la estructura real de la página
+    pick3 = soup.find('div', class_='pick3').text.strip()
+    pick4 = soup.find('div', class_='pick4').text.strip()
+    
+    return {
+        'Pick 3': pick3,
+        'Pick 4': pick4,
+        'date': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    }
+
 def scrape_all_lotteries():
     results = {}
     for state in STATES:
         if is_time_to_scrape(state):
-            result = scrape_lottery(state)
-            if result:
+            try:
+                result = scrape_lottery(state)
                 results[state] = {
                     'Pick 3': {'numbers': result['Pick 3'], 'date': result['date']},
                     'Pick 4': {'numbers': result['Pick 4'], 'date': result['date']},
                     'status': 'found'
                 }
-            else:
+            except Exception as e:
+                logging.error(f"Error scraping {state}: {str(e)}")
                 results[state] = {'status': 'not_available'}
         else:
             results[state] = {'status': 'not_time'}
