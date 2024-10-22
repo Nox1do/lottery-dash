@@ -114,17 +114,17 @@ const LotteryTable = ({ results, messages, lastUpdateTime }) => {
     <table className="w-full bg-white border-collapse border border-gray-200 hidden sm:table">
       <thead>
         <tr className="bg-gray-100">
-          <th className="px-4 py-2 text-left text-lg font-bold">Estado</th>
-          <th className="px-4 py-2 text-center text-lg font-bold">Pick 3</th>
-          <th className="px-4 py-2 text-center text-lg font-bold">Pick 4</th>
-          <th className="px-4 py-2 text-center text-lg font-bold">Última Actualización</th>
+          <th className="px-4 py-2 text-left text-xl font-bold">Estado</th>
+          <th className="px-4 py-2 text-center text-xl font-bold">Pick 3</th>
+          <th className="px-4 py-2 text-center text-xl font-bold">Pick 4</th>
+          <th className="px-4 py-2 text-center text-xl font-bold">Última Actualización</th>
         </tr>
       </thead>
       <tbody>
         {sortedAndFilteredStates.map((state) => (
           <tr key={state} className="border-t border-gray-200 hover:bg-gray-50">
-            <td className="px-4 py-2 text-lg font-bold">
-              {(stateNames[state] || state).replace(/-/g, ' ')}
+            <td className="px-4 py-2 text-xl font-bold">
+              {(stateNames[state] || state.replace(/-/g, ' ')).split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ')}
             </td>
             <td className="px-4 py-2 text-center">
               <ResultWithCopyButton result={results[`${state}-Pick 3`]?.result} isMobile={false} />
