@@ -80,11 +80,8 @@ const LotteryTable = ({ results, messages, lastUpdateTime }) => {
   const renderMobileView = () => (
     <div className="sm:hidden">
       <div className="sticky top-0 bg-white z-10 pb-4">
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex justify-center items-center mb-4">
           <h2 className="text-xl font-bold text-gray-800">Resultados de Lotería</h2>
-          <span className="text-sm text-gray-500">
-            Última actualización: {formatDateTime(lastUpdateTime)}
-          </span>
         </div>
         <input
           type="text"
@@ -97,7 +94,7 @@ const LotteryTable = ({ results, messages, lastUpdateTime }) => {
       <div className="mt-4 space-y-6">
         {sortedAndFilteredStates.map((state) => (
           <div key={state} className="bg-white rounded-lg shadow-md p-4">
-            <h3 className="text-lg font-semibold text-gray-800 mb-3">
+            <h3 className="text-lg font-semibold text-gray-800 mb-3 text-center">
               {stateNames[state] || state.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
             </h3>
             <div className="flex justify-around">
@@ -117,16 +114,18 @@ const LotteryTable = ({ results, messages, lastUpdateTime }) => {
     <table className="w-full bg-white border-collapse border border-gray-200 hidden sm:table">
       <thead>
         <tr className="bg-gray-100">
-          <th className="px-4 py-2 text-left">Estado</th>
-          <th className="px-4 py-2 text-center">Pick 3</th>
-          <th className="px-4 py-2 text-center">Pick 4</th>
-          <th className="px-4 py-2 text-center">Última Actualización</th>
+          <th className="px-4 py-2 text-left text-lg font-bold">Estado</th>
+          <th className="px-4 py-2 text-center text-lg font-bold">Pick 3</th>
+          <th className="px-4 py-2 text-center text-lg font-bold">Pick 4</th>
+          <th className="px-4 py-2 text-center text-lg font-bold">Última Actualización</th>
         </tr>
       </thead>
       <tbody>
         {sortedAndFilteredStates.map((state) => (
           <tr key={state} className="border-t border-gray-200 hover:bg-gray-50">
-            <td className="px-4 py-2">{stateNames[state] || state}</td>
+            <td className="px-4 py-2 text-lg font-bold">
+              {(stateNames[state] || state).replace(/-/g, ' ')}
+            </td>
             <td className="px-4 py-2 text-center">
               <ResultWithCopyButton result={results[`${state}-Pick 3`]?.result} isMobile={false} />
             </td>
