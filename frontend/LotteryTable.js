@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 
 const stateOrder = [
   'tennessee', 'texas', 'maryland', 'ohio', 'georgia', 'new-jersey', 'south-carolina', 'michigan',
@@ -15,39 +15,48 @@ const stateNames = {
   'texas-2': 'TEXAS 2',
 };
 
-const ResultWithCopyButton = ({ result }) => {
-  const [copied, setCopied] = useState(false);
-
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(result).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
-  };
-
-  return (
-    <div className="flex items-center">
-      <span className="px-4 py-2 inline-flex text-xl leading-5 font-semibold rounded-full bg-green-100 text-green-800 mr-2">
-        {result}
-      </span>
-      <button
-        onClick={copyToClipboard}
-        className="p-1 rounded-full hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200"
-        title="Copiar al portapapeles"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-500 hover:text-indigo-600" viewBox="0 0 20 20" fill="currentColor">
-          <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
-          <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
-        </svg>
-      </button>
-      {copied && (
-        <span className="ml-2 text-sm text-green-600 font-medium">¡Copiado!</span>
-      )}
-    </div>
-  );
+const sorteoHoras = {
+  'tennessee': '10:28:00 AM',
+  'texas': '11:00:00 AM',
+  'maryland': '12:28:00 PM',
+  'ohio': '12:29:00 PM',
+  'georgia': '12:29:00 PM',
+  'michigan': '12:59:00 PM',
+  'new-jersey': '12:59:00 PM',
+  'south-carolina': '12:59:00 PM',
+  'maine': '1:10:00 PM',
+  'new-hampshire': '1:10:00 PM',
+  'indiana': '1:20:00 PM',
+  'iowa': '1:20:00 PM',
+  'kentucky': '1:20:00 PM',
+  'texas-2': '1:27:00 PM',
+  'tennessee-2': '1:28:00 PM',
+  'florida': '1:30:00 PM',
+  'rhode-island': '1:30:00 PM',
+  'pennsylvania': '1:35:00 PM',
+  'illinois': '1:40:00 PM',
+  'missouri': '1:45:00 PM',
+  'district-of-columbia': '1:50:00 PM',
+  'connecticut': '1:57:00 PM',
+  'delaware': '1:58:00 PM',
+  'arkansas': '1:59:00 PM',
+  'virginia': '1:59:00 PM',
+  'massachusetts': '2:00:00 PM',
+  'kansas': '2:10:00 PM',
+  'new-york': '2:30:00 PM',
+  'wisconsin': '2:30:00 PM',
+  'north-carolina': '3:00:00 PM',
+  'new-mexico': '3:00:00 PM',
+  'mississippi': '3:30:00 PM',
+  'colorado': '3:30:00 PM',
+  'california': '4:00:00 PM',
+  'oregon': '4:00:00 PM',
+  'idaho': '4:00:00 PM'
 };
 
 const LotteryTable = ({ results, messages, lastUpdateTime }) => {
+  const [searchTerm, setSearchTerm] = useState('');
+
   const formatDateTime = (date) => {
     if (!date) return 'N/A';
     if (typeof date === 'string' && date.includes('/')) {
@@ -65,41 +74,125 @@ const LotteryTable = ({ results, messages, lastUpdateTime }) => {
     });
   };
 
-  return (
-    <table className="min-w-full bg-white">
-      <tbody className="divide-y divide-gray-200">
-        {stateOrder.map((state) => (
-          <tr key={state} className="transition-colors duration-200 ease-in-out hover:bg-indigo-100 group">
-            <td className="px-6 py-4 whitespace-nowrap text-lg font-bold text-gray-900 group-hover:text-indigo-900">
-              <div className="uppercase">
-                {stateNames[state] || state.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
-              </div>
+  const ResultWithCopyButton = ({ result, label }) => {
+    const [copied, setCopied] = useState(false);
+  
+    const copyToClipboard = useCallback(() => {
+      navigator.clipboard.writeText(result).then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      });
+    }, [result]);
+  
+    if (!result) return null;
+  
+    return (
+      <div className="flex flex-col items-center">
+        <span className="text-sm font-medium text-gray-500 mb-1">{label}</span>
+        <button
+          onClick={copyToClipboard}
+          className="text-2xl font-bold bg-green-100 text-green-800 px-4 py-2 rounded-lg hover:bg-green-200 transition-colors duration-200"
+        >
+          {result}
+        </button>
+        {copied && (
+          <span className="mt-1 px-2 py-1 bg-gray-800 text-white text-xs rounded shadow-lg">
+            Copiado!
+          </span>
+        )}
+      </div>
+    );
+  };
+
+  const sortedAndFilteredStates = useMemo(() => {
+    return stateOrder
+      .filter(state => state.toLowerCase().includes(searchTerm.toLowerCase()))
+      .sort((a, b) => {
+        const resultA = results[`${a}-Pick 3`]?.result || results[`${a}-Pick 4`]?.result;
+        const resultB = results[`${b}-Pick 3`]?.result || results[`${b}-Pick 4`]?.result;
+        if (resultA && !resultB) return -1;
+        if (!resultA && resultB) return 1;
+        return 0;
+      });
+  }, [results, searchTerm]);
+
+  const renderMobileView = () => (
+    <div className="sm:hidden">
+      <div className="sticky top-0 bg-white z-10 pb-4">
+        <div className="flex justify-center items-center mb-4">
+          <h2 className="text-xl font-bold text-gray-800">Resultados de Lotería</h2>
+        </div>
+        <input
+          type="text"
+          placeholder="Buscar estado..."
+          className="w-full px-4 py-2 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+      </div>
+      <div className="mt-4 space-y-6">
+        {sortedAndFilteredStates.map((state) => (
+          <div key={state} className="bg-white rounded-lg shadow-md p-4">
+            <h3 className="text-lg font-semibold text-gray-800 mb-3 text-center">
+              {stateNames[state] || state.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+            </h3>
+            <div className="flex justify-around">
+              <ResultWithCopyButton result={results[`${state}-Pick 3`]?.result} label="PICK 3" />
+              <ResultWithCopyButton result={results[`${state}-Pick 4`]?.result} label="PICK 4" />
+            </div>
+            <div className="mt-3 text-sm text-center text-gray-500">
+              Última actualización: {formatDateTime(results[`${state}-Pick 3`]?.date || results[`${state}-Pick 4`]?.date)}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  const renderDesktopView = () => (
+    <table className="w-full bg-white border-collapse border border-gray-200 hidden sm:table">
+      <thead>
+        <tr className="bg-gray-100">
+          <th className="px-4 py-2 text-left text-xl font-bold">Estado</th>
+          <th className="px-4 py-2 text-center text-xl font-bold">Pick 3</th>
+          <th className="px-4 py-2 text-center text-xl font-bold">Pick 4</th>
+          <th className="px-4 py-2 text-center text-xl font-bold">Hora del Sorteo</th>
+          <th className="px-4 py-2 text-center text-xl font-bold">Estado</th>
+          <th className="px-4 py-2 text-center text-xl font-bold">Última Actualización</th>
+        </tr>
+      </thead>
+      <tbody>
+        {sortedAndFilteredStates.map((state) => (
+          <tr key={state} className="border-t border-gray-200 hover:bg-gray-50">
+            <td className="px-4 py-2 text-xl font-bold">
+              {(stateNames[state] || state.replace(/-/g, ' ')).split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ')}
             </td>
-            {['Pick 3', 'Pick 4'].map(lottery => {
-              const key = `${state}-${lottery}`;
-              const result = results[key];
-              return (
-                <td key={key} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {result && result.result ? (
-                    <ResultWithCopyButton result={result.result} />
-                  ) : (
-                    <span className="px-4 py-2 inline-flex text-xl leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
-                      No disponible
-                    </span>
-                  )}
-                  <div className="text-xs text-gray-500 mt-1">
-                    {messages[key]}
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    Última actualización: {formatDateTime(result ? result.date : null)}
-                  </div>
-                </td>
-              );
-            })}
+            <td className="px-4 py-2 text-center">
+              <ResultWithCopyButton result={results[state]?.['Pick 3']?.numbers} isMobile={false} />
+            </td>
+            <td className="px-4 py-2 text-center">
+              <ResultWithCopyButton result={results[state]?.['Pick 4']?.numbers} isMobile={false} />
+            </td>
+            <td className="px-4 py-2 text-center text-sm text-gray-500">
+              {sorteoHoras[state] || 'N/A'}
+            </td>
+            <td className="px-4 py-2 text-center text-sm text-gray-500">
+              {results[state]?.status || 'N/A'}
+            </td>
+            <td className="px-4 py-2 text-center text-sm text-gray-500">
+              {formatDateTime(results[state]?.['Pick 3']?.date || results[state]?.['Pick 4']?.date) || 'N/A'}
+            </td>
           </tr>
         ))}
       </tbody>
     </table>
+  );
+
+  return (
+    <div className="overflow-x-auto">
+      {renderMobileView()}
+      {renderDesktopView()}
+    </div>
   );
 };
 
