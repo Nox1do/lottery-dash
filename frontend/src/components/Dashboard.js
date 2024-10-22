@@ -115,8 +115,16 @@ function Dashboard() {
   }, [processResult]);
 
   useEffect(() => {
-    fetchResults();
-    const interval = setInterval(fetchResults, 120000); // 2 minutos
+    const checkSchedule = async () => {
+      const now = new Date();
+      const eastern = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+      
+      // Verificar cada minuto si hay nuevos sorteos para buscar
+      await fetchResults();
+    };
+
+    checkSchedule();
+    const interval = setInterval(checkSchedule, 60000); // Verificar cada minuto
     return () => clearInterval(interval);
   }, [fetchResults]);
 
