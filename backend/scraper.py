@@ -1,11 +1,9 @@
 import requests
 from bs4 import BeautifulSoup
-from concurrent.futures import ThreadPoolExecutor, as_completed, TimeoutError
 from datetime import datetime, timedelta
 import pytz
 from cachetools import TTLCache, cached
 import logging
-import time
 
 logging.basicConfig(level=logging.INFO)
 
@@ -64,33 +62,37 @@ sorteoHoras = {
 def is_time_to_scrape(state):
     eastern = pytz.timezone('America/New_York')
     now = datetime.now(eastern)
-    sorteo_hora_str = sorteoHoras.get(state)
-    if not sorteo_hora_str:
-        return False
-    sorteo_hora = datetime.strptime(sorteo_hora_str, '%H:%M:%S').time()
+    sorteo_hora = datetime.strptime(sorteoHoras[state], '%H:%M:%S').time()
     sorteo_datetime = eastern.localize(datetime.combine(now.date(), sorteo_hora))
     
     # Buscar desde 5 minutos antes hasta 30 minutos después del sorteo
-    window_start = sorteo_datetime - timedelta(minutes=5)
-    window_end = sorteo_datetime + timedelta(minutes=30)
-    return window_start <= now <= window_end
+    return sorteo_datetime - timedelta(minutes=5) <= now <= sorteo_datetime + timedelta(minutes=30)
 
 @cached(cache)
-def scrape_state_lottery(state):
-    # ... (código existente)
-
-    eastern = pytz.timezone('US/Eastern')
-    current_time = datetime.now(eastern)
-    sorteo_time = datetime.strptime(sorteoHoras.get(state, '00:00:00'), '%H:%M:%S').time()
-    sorteo_datetime = eastern.localize(datetime.combine(current_time.date(), sorteo_time))
-
-    # Solo buscar resultados si estamos dentro de los 30 minutos posteriores a la hora del sorteo
-    if current_time < sorteo_datetime or (current_time - sorteo_datetime) > timedelta(minutes=30):
-        return {state: {'status': 'not_available'}}
-
-    # ... (resto del código de scraping)
-
-    return {state: results if results else {'status': 'not_found'}}
+def scrape_lottery(state):
+    # Aquí implementaremos el scraping real para cada estado
+    # Este es un ejemplo para Tennessee, deberías adaptarlo para cada estado
+    if state == 'tennessee':
+        url = "https://www.tnlottery.com/winning-numbers/"
+        try:
+            response = requests.get(url)
+            soup = BeautifulSoup(response.content, 'html.parser')
+            
+            pick3 = soup.find('div', {'class': 'cash3-mid-day'}).find('p', {'class': 'winning-numbers'}).text.strip()
+            pick4 = soup.find('div', {'class': 'cash4-mid-day'}).find('p', {'class': 'winning-numbers'}).text.strip()
+            
+            return {
+                'Pick 3': pick3,
+                'Pick 4': pick4,
+                'date': datetime.now(pytz.timezone('America/New_York')).isoformat()
+            }
+        except Exception as e:
+            logging.error(f"Error scraping {state}: {e}")
+            return None
+    else:
+        # Para otros estados, implementar lógica similar
+        logging.warning(f"Scraping no implementado para {state}")
+        return None
 
 def scrape_all_lotteries():
     results = {}
@@ -122,4 +124,5 @@ def test_scraping_time():
             logging.info(f"No es hora de hacer scraping para {state}")
 
 # Llama a esta función para probar
-test_scraping_time()
+if __name__ == "__main__":
+    test_scraping_time()

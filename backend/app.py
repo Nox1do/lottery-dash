@@ -1,7 +1,7 @@
 from flask import Flask, jsonify
 from flask_cors import CORS
 from scraper import scrape_all_lotteries
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
 
 app = Flask(__name__)
@@ -22,7 +22,7 @@ def get_lottery_results():
     current_time = datetime.now(eastern)
     
     # Evitar scraping más frecuente que cada 5 minutos
-    if last_scrape_time is None or (current_time - last_scrape_time).total_seconds() > 300:
+    if last_scrape_time is None or (current_time - last_scrape_time) > timedelta(minutes=5):
         results = scrape_all_lotteries()
         last_scrape_time = current_time
         cached_results = results
