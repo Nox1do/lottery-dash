@@ -246,14 +246,21 @@ def scrape_all_lotteries():
         'california', 'idaho'
     ]
     
-    all_results = {}
-    
     eastern = pytz.timezone('US/Eastern')
-    current_datetime = datetime.now(eastern)
-    current_date = current_datetime.date()
+    current_date = datetime.now(eastern).date()
+    
+    # Verificar si ya tenemos resultados de hoy
+    cached_results = cache.get('lottery_results')
+    if cached_results and cached_results.get('date') == current_date:
+        all_results = cached_results['results']
+        states_with_results = set(all_results.keys())
+        states_to_scrape = [state for state in states if state not in states_with_results]
+    else:
+        all_results = {}
+        states_to_scrape = states
 
     with ThreadPoolExecutor(max_workers=5) as executor:
-        future_to_state = {executor.submit(scrape_state_lottery, state): state for state in states}
+        future_to_state = {executor.submit(scrape_state_lottery, state): state for state in states_to_scrape}
         for future in as_completed(future_to_state, timeout=60):
             state = future_to_state[future]
             try:
@@ -265,6 +272,9 @@ def scrape_all_lotteries():
                 logging.warning(f"Timeout al procesar el estado {state}")
             except Exception as exc:
                 logging.error(f"Error al procesar el estado {state}: {exc}")
+
+    # Actualizar la caché con los nuevos resultados
+    cache.set('lottery_results', {'date': current_date, 'results': all_results})
 
     logging.info("scrape_all_lotteries completado")
     return all_results
