@@ -23,38 +23,19 @@ function Dashboard() {
   });
   const [isUpdating, setIsUpdating] = useState(false);
 
-  const processResult = useCallback((state, lottery, result, serverDate) => {
-    if (result && result.numbers && result.date) {
-      const resultDate = new Date(result.date);
-      const serverDateTime = new Date(serverDate);
-      
-      resultDate.setHours(serverDateTime.getHours());
-      resultDate.setMinutes(serverDateTime.getMinutes());
-      resultDate.setSeconds(serverDateTime.getSeconds());
-
-      const formattedDate = resultDate.toLocaleString('en-US', { 
-        timeZone: 'America/New_York',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-      });
-      return {
-        result: { 
-          result: result.numbers, 
-          date: formattedDate
-        },
-        message: "Resultados Actualizados"
-      };
-    } else {
-      return {
-        result: { result: null, date: null },
-        message: "N/A"
-      };
-    }
-  }, []);
+  const formatDateTimeFrontend = (date) => {
+    if (!date) return 'N/A';
+    const dateObj = new Date(date);
+    return isNaN(dateObj.getTime()) ? 'N/A' : dateObj.toLocaleString('es-ES', { 
+      timeZone: 'America/New_York',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
+  };
 
   const fetchResults = useCallback(async () => {
     setLoading(true);
@@ -65,46 +46,14 @@ function Dashboard() {
       }
       const data = await response.json();
 
-      // Convertir la fecha UTC del servidor a Eastern Time
-      const serverDate = new Date(data.date);
-      
-      // Formatear la fecha para mostrarla en Eastern Time
-      const formattedDate = new Intl.DateTimeFormat('en-US', {
-        timeZone: 'America/New_York',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: true
-      }).format(serverDate);
-
-      setLastUpdateTime(formattedDate);
-      localStorage.setItem('lastUpdateTime', formattedDate);
+      setLastUpdateTime(formatDateTimeFrontend(data.scrape_time));
+      localStorage.setItem('lastUpdateTime', formatDateTimeFrontend(data.scrape_time));
       
       // Actualizar solo los resultados que han cambiado
       setResults(prevResults => {
         const newResults = { ...prevResults };
         for (const [state, result] of Object.entries(data.results)) {
           if (JSON.stringify(newResults[state]) !== JSON.stringify(result)) {
-            if (result.status === 'found') {
-              // Convertir las fechas de los resultados a Eastern Time
-              ['Pick 3', 'Pick 4'].forEach(game => {
-                if (result[game] && result[game].date) {
-                  result[game].date = new Intl.DateTimeFormat('en-US', {
-                    timeZone: 'America/New_York',
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit',
-                    hour12: true
-                  }).format(new Date(result[game].date));
-                }
-              });
-            }
             newResults[state] = result;
           }
         }

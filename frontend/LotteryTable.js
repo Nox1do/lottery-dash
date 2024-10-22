@@ -59,11 +59,8 @@ const LotteryTable = ({ results, messages, lastUpdateTime }) => {
 
   const formatDateTime = (date) => {
     if (!date) return 'N/A';
-    if (typeof date === 'string' && date.includes('/')) {
-      return date;
-    }
     const dateObj = new Date(date);
-    return isNaN(dateObj.getTime()) ? 'N/A' : dateObj.toLocaleString('en-US', {
+    return isNaN(dateObj.getTime()) ? 'N/A' : dateObj.toLocaleString('es-ES', { 
       timeZone: 'America/New_York',
       year: 'numeric',
       month: '2-digit',
@@ -84,14 +81,14 @@ const LotteryTable = ({ results, messages, lastUpdateTime }) => {
       });
     }, [result]);
   
-    if (!result) return null;
+    if (!result) return <span className="text-gray-500">N/A</span>;
   
     return (
       <div className="flex flex-col items-center">
         <span className="text-sm font-medium text-gray-500 mb-1">{label}</span>
         <button
           onClick={copyToClipboard}
-          className="text-2xl font-bold bg-green-100 text-green-800 px-4 py-2 rounded-lg hover:bg-green-200 transition-colors duration-200"
+          className="text-lg font-bold bg-green-100 text-green-800 px-4 py-2 rounded-lg hover:bg-green-200 transition-colors duration-200"
         >
           {result}
         </button>
@@ -122,8 +119,8 @@ const LotteryTable = ({ results, messages, lastUpdateTime }) => {
     return stateOrder
       .filter(state => state.toLowerCase().includes(searchTerm.toLowerCase()))
       .sort((a, b) => {
-        const resultA = results[`${a}-Pick 3`]?.result || results[`${a}-Pick 4`]?.result;
-        const resultB = results[`${b}-Pick 3`]?.result || results[`${b}-Pick 4`]?.result;
+        const resultA = results[a]?.status === 'found';
+        const resultB = results[b]?.status === 'found';
         if (resultA && !resultB) return -1;
         if (!resultA && resultB) return 1;
         return 0;
@@ -151,11 +148,11 @@ const LotteryTable = ({ results, messages, lastUpdateTime }) => {
               {stateNames[state] || state.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
             </h3>
             <div className="flex justify-around">
-              <ResultWithCopyButton result={results[`${state}-Pick 3`]?.result} label="PICK 3" />
-              <ResultWithCopyButton result={results[`${state}-Pick 4`]?.result} label="PICK 4" />
+              <ResultWithCopyButton result={results[state]?.['Pick 3']?.numbers} label="PICK 3" />
+              <ResultWithCopyButton result={results[state]?.['Pick 4']?.numbers} label="PICK 4" />
             </div>
             <div className="mt-3 text-sm text-center text-gray-500">
-              Última actualización: {formatDateTime(results[`${state}-Pick 3`]?.date || results[`${state}-Pick 4`]?.date)}
+              Última actualización: {formatDateTime(results[state]?.['Pick 3']?.date || results[state]?.['Pick 4']?.date)}
             </div>
           </div>
         ))}
@@ -182,10 +179,10 @@ const LotteryTable = ({ results, messages, lastUpdateTime }) => {
               {(stateNames[state] || state.replace(/-/g, ' ')).split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ')}
             </td>
             <td className="px-4 py-2 text-center">
-              <ResultWithCopyButton result={results[state]?.['Pick 3']?.numbers} isMobile={false} />
+              <ResultWithCopyButton result={results[state]?.['Pick 3']?.numbers} label="PICK 3" />
             </td>
             <td className="px-4 py-2 text-center">
-              <ResultWithCopyButton result={results[state]?.['Pick 4']?.numbers} isMobile={false} />
+              <ResultWithCopyButton result={results[state]?.['Pick 4']?.numbers} label="PICK 4" />
             </td>
             <td className="px-4 py-2 text-center text-sm text-gray-500">
               {sorteoHoras[state] || 'N/A'}
@@ -194,7 +191,7 @@ const LotteryTable = ({ results, messages, lastUpdateTime }) => {
               {getStatusMessage(state)}
             </td>
             <td className="px-4 py-2 text-center text-sm text-gray-500">
-              {formatDateTime(results[state]?.['Pick 3']?.date || results[state]?.['Pick 4']?.date) || 'N/A'}
+              {formatDateTime(results[state]?.['Pick 3']?.date || results[state]?.['Pick 4']?.date)}
             </td>
           </tr>
         ))}
