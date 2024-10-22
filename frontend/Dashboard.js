@@ -65,8 +65,23 @@ function Dashboard() {
       }
       const data = await response.json();
 
-      setLastUpdateTime(data.date);
-      localStorage.setItem('lastUpdateTime', data.date);
+      // Convertir la fecha del servidor a objeto Date
+      const serverDate = new Date(data.date + ' UTC');
+      
+      // Formatear la fecha para mostrarla en Eastern Time
+      const formattedDate = serverDate.toLocaleString('en-US', {
+        timeZone: 'America/New_York',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true
+      });
+
+      setLastUpdateTime(formattedDate);
+      localStorage.setItem('lastUpdateTime', formattedDate);
       
       // Actualizar solo los resultados que han cambiado
       setResults(prevResults => {
