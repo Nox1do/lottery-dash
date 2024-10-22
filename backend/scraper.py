@@ -110,8 +110,7 @@ def scrape_lottery(state):
 
 def scrape_all_lotteries():
     results = {}
-    eastern = pytz.timezone('US/Eastern')
-    current_time = datetime.now(eastern)
+    current_time = datetime.now(pytz.utc)
     
     for state in STATES:
         if is_time_to_scrape(state):
@@ -129,7 +128,7 @@ def scrape_all_lotteries():
             results[state] = {'status': 'not_time'}
     
     results['scrape_time'] = current_time.strftime('%Y-%m-%d %H:%M:%S')
-    logging.info(f"Scraping realizado a las {results['scrape_time']} Eastern Time")
+    logging.info(f"Scraping realizado a las {results['scrape_time']} UTC")
     return results
 
 # Función para probar el comportamiento
@@ -144,5 +143,5 @@ def test_scraping_time():
         else:
             logging.info(f"No es hora de hacer scraping para {state}")
 
-# Llama a esta función para probar bien
+# Llama a esta función para probar
 test_scraping_time()
