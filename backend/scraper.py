@@ -88,6 +88,9 @@ def scrape_state_lottery(state):
     return {state: results if results else {'status': 'not_found'}}
 
 def scrape_lottery(state):
+    eastern = pytz.timezone('US/Eastern')
+    current_time = datetime.now(eastern)
+    
     # Implementa aquí la lógica de scraping para cada estado
     # Este es solo un ejemplo, deberás adaptarlo según tus necesidades
     url = f"https://example.com/lottery/{state}"
@@ -98,9 +101,6 @@ def scrape_lottery(state):
     # Este es un ejemplo, ajústalo según la estructura real de la página
     pick3 = soup.find('div', class_='pick3').text.strip()
     pick4 = soup.find('div', class_='pick4').text.strip()
-    
-    eastern = pytz.timezone('US/Eastern')
-    current_time = datetime.now(eastern)
     
     return {
         'Pick 3': pick3,
@@ -129,4 +129,20 @@ def scrape_all_lotteries():
             results[state] = {'status': 'not_time'}
     
     results['scrape_time'] = current_time.strftime('%Y-%m-%d %H:%M:%S')
+    logging.info(f"Scraping realizado a las {results['scrape_time']} Eastern Time")
     return results
+
+# Función para probar el comportamiento
+def test_scraping_time():
+    eastern = pytz.timezone('US/Eastern')
+    current_time = datetime.now(eastern)
+    logging.info(f"Hora actual en Eastern Time: {current_time.strftime('%Y-%m-%d %H:%M:%S')}")
+    
+    for state in STATES:
+        if is_time_to_scrape(state):
+            logging.info(f"Es hora de hacer scraping para {state}")
+        else:
+            logging.info(f"No es hora de hacer scraping para {state}")
+
+# Llama a esta función para probar
+test_scraping_time()
