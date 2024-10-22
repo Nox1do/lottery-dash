@@ -127,7 +127,7 @@ def scrape_all_lotteries():
         else:
             results[state] = {'status': 'not_time'}
     
-    results['scrape_time'] = current_time.strftime('%Y-%m-%d %H:%M:%S')
+    results['scrape_time'] = current_time.strftime('%Y-%m-%dT%H:%M:%S.%fZ')  # Formato ISO8601 sin offset
     logging.info(f"Scraping realizado a las {results['scrape_time']} UTC")
     return results
 

@@ -30,7 +30,7 @@ def get_lottery_results():
     
     return jsonify({
         'results': results,
-        'date': current_time.isoformat()
+        'date': current_time.strftime('%Y-%m-%dT%H:%M:%S.%fZ')  # Formato ISO8601 sin offset
     })
 
 @app.route('/api/test')
