@@ -274,7 +274,7 @@ def scrape_all_lotteries():
                 logging.error(f"Error al procesar el estado {state}: {exc}")
 
     # Actualizar la caché con los nuevos resultados
-    cache.set('lottery_results', {'date': current_date, 'results': all_results})
+    cache['lottery_results'] = {'date': current_date, 'results': all_results}
 
     logging.info("scrape_all_lotteries completado")
     return all_results
