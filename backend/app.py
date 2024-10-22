@@ -40,7 +40,12 @@ def get_lottery_results():
         }
         return jsonify(response)
     except Exception as e:
-        return jsonify({"error": "Error Interno del Servidor"}), 500
+        logger.error(f"Error en get_lottery_results: {str(e)}", exc_info=True)
+        return jsonify({"error": "Error Interno del Servidor", "details": str(e)}), 500
+
+@app.route('/api/test')
+def test():
+    return jsonify({"status": "ok"}), 200
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
