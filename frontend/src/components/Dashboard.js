@@ -65,54 +65,43 @@ function Dashboard() {
       }
       const data = await response.json();
 
-      const serverUpdateTime = new Date(data.date).toLocaleString('en-US', { 
+      // Convertir la fecha del servidor a objeto Date
+      const serverDate = new Date(data.date + ' UTC');
+      
+      // Formatear la fecha para mostrarla en Eastern Time
+      const formattedDate = serverDate.toLocaleString('en-US', {
         timeZone: 'America/New_York',
         year: 'numeric',
         month: '2-digit',
         day: '2-digit',
         hour: '2-digit',
         minute: '2-digit',
-        second: '2-digit'
+        second: '2-digit',
+        hour12: true
       });
-      setLastUpdateTime(serverUpdateTime);
-      localStorage.setItem('lastUpdateTime', serverUpdateTime);
+
+      setLastUpdateTime(formattedDate);
+      localStorage.setItem('lastUpdateTime', formattedDate);
       
-      const newResults = {};
-      const newMessages = {};
-
-      STATES.forEach(state => {
-        if (data.results[state]) {
-          LOTTERIES.forEach(lottery => {
-            const key = `${state}-${lottery}`;
-            const result = data.results[state][lottery];
-            if (result) {
-              const { result: processedResult, message } = processResult(state, lottery, result, data.date);
-              newResults[key] = processedResult;
-              newMessages[key] = message;
-            } else {
-              newResults[key] = { result: null, date: null };
-              newMessages[key] = "N/A";
-            }
-          });
-        } else {
-          LOTTERIES.forEach(lottery => {
-            const key = `${state}-${lottery}`;
-            newResults[key] = { result: null, date: null };
-            newMessages[key] = "N/A";
-          });
+      // Actualizar solo los resultados que han cambiado
+      setResults(prevResults => {
+        const newResults = { ...prevResults };
+        for (const [state, result] of Object.entries(data.results)) {
+          if (JSON.stringify(newResults[state]) !== JSON.stringify(result)) {
+            newResults[state] = result;
+          }
         }
+        return newResults;
       });
-
-      setResults(newResults);
-      localStorage.setItem('lotteryResults', JSON.stringify(newResults));
-      setMessages(newMessages);
+      
+      localStorage.setItem('lotteryResults', JSON.stringify(data.results));
     } catch (err) {
       console.error('Error:', err);
       setMessages({ general: `Error: ${err.message}` });
     } finally {
       setLoading(false);
     }
-  }, [processResult]);
+  }, []);
 
   useEffect(() => {
     fetchResults();
