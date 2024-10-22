@@ -1,16 +1,13 @@
 import requests
 from bs4 import BeautifulSoup
-from concurrent.futures import ThreadPoolExecutor, as_completed, TimeoutError
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
 import pytz
 import sys
 from cachetools import TTLCache, cached
-import logging
 
-logging.basicConfig(level=logging.INFO)
-
-# Crear un caché que expire después de 24 horas
-cache = TTLCache(maxsize=100, ttl=300)  # 300 segundos = 5minutos
+# Crear un caché que expire después de 1 hora
+cache = TTLCache(maxsize=100, ttl=3600)  # 3600 segundos = 1 hora
 
 def scrape_state_lottery(state):
     base_state = state.replace('-2', '')
@@ -19,9 +16,12 @@ def scrape_state_lottery(state):
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
     }
     
+    print(f"[DEBUG] Intentando acceder a la URL: {url}", file=sys.stderr)
     response = requests.get(url, headers=headers)
+    print(f"[DEBUG] Código de estado de la respuesta para {state}: {response.status_code}", file=sys.stderr)
     
     if response.status_code != 200:
+        print(f"[ERROR] Error al acceder a la página de {state}. Código de estado: {response.status_code}", file=sys.stderr)
         return None
     
     soup = BeautifulSoup(response.content, 'html.parser')
@@ -34,14 +34,22 @@ def scrape_state_lottery(state):
         number_elements = soup.select(number_selector)
         date_element = soup.select_one(date_selector)
         
+        print(f"[DEBUG] Estado: {state}, Juego: {game}", file=sys.stderr)
+        print(f"[DEBUG] Selector números: {number_selector}, Elementos encontrados: {len(number_elements)}", file=sys.stderr)
+        print(f"[DEBUG] Selector fecha: {date_selector}, Elemento encontrado: {date_element is not None}", file=sys.stderr)
+        
         if number_elements and date_element:
             numbers = ''.join([elem.text.strip() for elem in number_elements if elem.text.strip().isdigit()])
             date = date_element.get('datetime', '').strip()
             if not date:
                 date = date_element.text.strip()
+            print(f"[DEBUG] {state} - {game}: Fecha original: {date}", file=sys.stderr)
             # No intentamos formatear la fecha aquí, la dejamos como está
+            print(f"[DEBUG] {state} - {game}: Números encontrados: {numbers}", file=sys.stderr)
+            print(f"[DEBUG] {state} - {game}: Fecha encontrada: {date}", file=sys.stderr)
             return numbers, date
         
+        print(f"[WARNING] No se encontraron números o fecha para {state} - {game}", file=sys.stderr)
         return None, None
 
     # Configuraciones específicas para cada estado
@@ -222,21 +230,29 @@ def scrape_state_lottery(state):
     eastern = pytz.timezone('US/Eastern')
     today = datetime.now(eastern).date()
     today_str = today.strftime('%Y-%m-%d')  # Formato YYYY-MM-DD
+    print(f"[DEBUG] Fecha de hoy (ET): {today_str}", file=sys.stderr)
 
     for game, selectors in config.items():
         numbers, date_str = get_numbers_and_date(selectors['numbers'], selectors['date'], game)
         if numbers and date_str:
+            print(f"[DEBUG] {state} - {game}: Números encontrados: {numbers}, Fecha: {date_str}", file=sys.stderr)
             if date_str.startswith(today_str):
                 results[game] = {
                     'numbers': numbers,
                     'date': date_str
                 }
+                print(f"[INFO] Resultado añadido para {state} - {game}: {numbers}", file=sys.stderr)
+            else:
+                print(f"[INFO] Resultado de {state} - {game} no es de hoy. Fecha: {date_str}", file=sys.stderr)
+        else:
+            print(f"[WARNING] No se encontraron números o fecha para {state} - {game}", file=sys.stderr)
+
+    print(f"[DEBUG] Resultados finales para {state}: {results}", file=sys.stderr)
     
     return {state: results} if results else None  # Solo devuelve resultados si hay alguno para hoy
 
 @cached(cache)
 def scrape_all_lotteries():
-    logging.info("Iniciando scrape_all_lotteries")
     states = [
         'tennessee', 'texas', 'maryland', 'ohio', 'georgia', 'new-jersey', 'south-carolina', 'michigan',
         'maine', 'new-hampshire', 'iowa', 'rhode-island', 'kentucky', 'indiana', 'florida',
@@ -252,21 +268,25 @@ def scrape_all_lotteries():
     current_datetime = datetime.now(eastern)
     current_date = current_datetime.date()
 
+    print(f"[DEBUG] Hora actual (ET): {current_datetime}", file=sys.stderr)
+    print(f"[DEBUG] Fecha final de los resultados: {current_date.isoformat()}", file=sys.stderr)
+
     with ThreadPoolExecutor(max_workers=5) as executor:
         future_to_state = {executor.submit(scrape_state_lottery, state): state for state in states}
-        for future in as_completed(future_to_state, timeout=60):
+        for future in as_completed(future_to_state):
             state = future_to_state[future]
             try:
-                result = future.result(timeout=10)
-                if result and result[state]:
+                result = future.result()
+                print(f"[DEBUG] Resultado obtenido para {state}: {result}", file=sys.stderr)
+                if result and result[state]:  # Verifica si hay resultados para el estado
                     all_results.update(result)
-                    logging.info(f"Scraping completado para {state}")
-            except TimeoutError:
-                logging.warning(f"Timeout al procesar el estado {state}")
+                    print(f"[DEBUG] Resultados añadidos para {state}: {result}", file=sys.stderr)
+                else:
+                    print(f"[INFO] No se encontraron resultados de hoy para {state}.", file=sys.stderr)
             except Exception as exc:
-                logging.error(f"Error al procesar el estado {state}: {exc}")
-
-    logging.info("scrape_all_lotteries completado")
+                print(f'[ERROR] {state} generó una excepción: {exc}', file=sys.stderr)
+    
+    print(f"[DEBUG] Todos los resultados de hoy: {all_results}", file=sys.stderr)
     return all_results
 
 if __name__ == '__main__':
