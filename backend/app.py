@@ -8,12 +8,15 @@ import os
 import logging
 
 app = Flask(__name__)
-CORS(app, resources={r"/api/*": {"origins": "https://lottery-dash.vercel.app"}}, methods=["GET"], allow_headers=["Content-Type", "Authorization"])
-
+CORS(app, resources={r"/api/*": {"origins": "https://lottery-dash.vercel.app"}})
 
 # Configuración de logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Configuración de Flask para recursos limitados
+app.config['PROPAGATE_EXCEPTIONS'] = True
+app.config['MAX_CONTENT_LENGTH'] = 1 * 1024 * 1024  # Limitar payload a 1MB
 
 @app.route('/')
 def home():
@@ -37,17 +40,26 @@ def get_lottery_results():
         
         response = {
             "date": current_time.isoformat(),
-            "results": results,
+            "results": results or {},
             "schedule": sorteoHoras,
             "states_checked": stateOrder,
-            "states_with_results": list(results.keys())
+            "states_with_results": list(results.keys() if results else [])
         }
-        logger.info("Resultados de la lotería procesados exitosamente")
-        return jsonify(response)
+        
+        logger.info(f"Retornando resultados para {len(results) if results else 0} estados")
+        return jsonify(response), 200
     except Exception as e:
-        logger.error(f"Error al procesar los resultados de la lotería: {str(e)}")
-        return jsonify({"error": "Error Interno del Servidor"}), 500
+        logger.error(f"Error en get_lottery_results: {str(e)}")
+        return jsonify({
+            "error": "Error Interno del Servidor",
+            "message": str(e),
+            "results": {},
+            "states_checked": [],
+            "states_with_results": []
+        }), 500
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
+
+# No se encontraron importaciones de LotteryResults
