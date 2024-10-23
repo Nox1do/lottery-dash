@@ -4,7 +4,7 @@ import LotteryTable from './LotteryTable';
 const LOTTERIES = ['Pick 3', 'Pick 4'];
 const STATES = [
   'tennessee', 'texas', 'maryland', 'ohio', 'georgia', 'new-jersey', 'south-carolina', 'michigan',
-  'maine', 'new-hampshire', 'iowa', 'rhode-island', 'kentucky', 'indiana', 'florida',
+  'maine', 'new-hampshire', 'kentucky', 'indiana', 'iowa', 'rhode-island', 'florida',
   'pennsylvania', 'tennessee-2', 'texas-2', 'illinois', 'missouri', 'district-of-columbia',
   'massachusetts', 'arkansas', 'virginia', 'kansas', 'delaware', 'connecticut', 'new-york',
   'wisconsin', 'north-carolina', 'new-mexico', 'mississippi', 'colorado', 'oregon',
@@ -18,46 +18,15 @@ function Dashboard() {
   });
   const [messages, setMessages] = useState({});
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [lastUpdateTime, setLastUpdateTime] = useState(() => {
     return localStorage.getItem('lastUpdateTime') || null;
   });
   const [isUpdating, setIsUpdating] = useState(false);
 
-  const processResult = useCallback((state, lottery, result, serverDate) => {
-    if (result && result.numbers && result.date) {
-      const resultDate = new Date(result.date);
-      const serverDateTime = new Date(serverDate);
-      
-      resultDate.setHours(serverDateTime.getHours());
-      resultDate.setMinutes(serverDateTime.getMinutes());
-      resultDate.setSeconds(serverDateTime.getSeconds());
-
-      const formattedDate = resultDate.toLocaleString('en-US', { 
-        timeZone: 'America/New_York',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-      });
-      return {
-        result: { 
-          result: result.numbers, 
-          date: formattedDate
-        },
-        message: "Resultados Actualizados"
-      };
-    } else {
-      return {
-        result: { result: null, date: null },
-        message: "N/A"
-      };
-    }
-  }, []);
-
   const fetchResults = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const response = await fetch('https://lottery-dash.onrender.com/api/lottery-results');
       if (!response.ok) {
@@ -86,9 +55,11 @@ function Dashboard() {
             const key = `${state}-${lottery}`;
             const result = data.results[state][lottery];
             if (result) {
-              const { result: processedResult, message } = processResult(state, lottery, result, data.date);
-              newResults[key] = processedResult;
-              newMessages[key] = message;
+              newResults[key] = {
+                result: result.numbers,
+                date: result.date
+              };
+              newMessages[key] = "Resultados Actualizados";
             } else {
               newResults[key] = { result: null, date: null };
               newMessages[key] = "N/A";
@@ -108,23 +79,19 @@ function Dashboard() {
       setMessages(newMessages);
     } catch (err) {
       console.error('Error:', err);
-      setMessages({ general: `Error: ${err.message}` });
+      setError(`Error al cargar los resultados: ${err.message}`);
     } finally {
       setLoading(false);
     }
-  }, [processResult]);
+  }, []);
 
   useEffect(() => {
     const checkSchedule = async () => {
-      const now = new Date();
-      const eastern = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
-      
-      // Verificar cada minuto si hay nuevos sorteos para buscar
       await fetchResults();
     };
 
     checkSchedule();
-    const interval = setInterval(checkSchedule, 60000); // Verificar cada minuto
+    const interval = setInterval(checkSchedule, 60000);
     return () => clearInterval(interval);
   }, [fetchResults]);
 
@@ -141,10 +108,36 @@ function Dashboard() {
       const remainingTime = Math.max(2000 - elapsedTime, 0);
       
       await new Promise(resolve => setTimeout(resolve, remainingTime));
-      
       setIsUpdating(false);
     }
   }, [fetchResults, isUpdating]);
+
+  if (loading && !results.length) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Cargando resultados...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center text-red-600">
+          <p>{error}</p>
+          <button 
+            onClick={handleUpdate}
+            className="mt-4 bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700"
+          >
+            Reintentar
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-100 to-indigo-200 py-12 px-4 sm:px-6 lg:px-8">
@@ -154,7 +147,7 @@ function Dashboard() {
         </h1>
         {lastUpdateTime && (
           <p className="text-center text-gray-600 mb-4">
-            Última actualización general: {lastUpdateTime}
+            Última actualización: {lastUpdateTime}
           </p>
         )}
         <div className="flex justify-center mb-8">
