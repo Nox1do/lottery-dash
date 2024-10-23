@@ -10,7 +10,7 @@ import logging
 logging.basicConfig(level=logging.INFO)
 
 # Crear un caché que expire después de 24 horas
-cache = TTLCache(maxsize=100, ttl=300)  # 300 segundos = 5minutos
+cache = TTLCache(maxsize=50, ttl=300)  # 600 segundos = 10 minutos
 
 def scrape_state_lottery(state):
     base_state = state.replace('-2', '')
@@ -252,7 +252,7 @@ def scrape_all_lotteries():
     current_datetime = datetime.now(eastern)
     current_date = current_datetime.date()
 
-    with ThreadPoolExecutor(max_workers=5) as executor:
+    with ThreadPoolExecutor(max_workers=3) as executor:
         future_to_state = {executor.submit(scrape_state_lottery, state): state for state in states}
         for future in as_completed(future_to_state, timeout=60):
             state = future_to_state[future]
