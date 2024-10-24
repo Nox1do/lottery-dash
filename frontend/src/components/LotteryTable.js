@@ -87,7 +87,7 @@ const LotteryTable = ({ results, messages, lastUpdateTime }) => {
     if (!result) return null;
   
     return (
-      <div className="flex flex-col items-center">
+      <div className="flex flex-col items-center relative min-h-[100px]">
         <span className="text-sm font-medium text-gray-500 mb-1">{label}</span>
         <button
           onClick={copyToClipboard}
@@ -96,7 +96,7 @@ const LotteryTable = ({ results, messages, lastUpdateTime }) => {
           {result}
         </button>
         {copied && (
-          <span className="mt-1 px-2 py-1 bg-gray-800 text-white text-xs rounded shadow-lg">
+          <span className="absolute top-full left-1/2 transform -translate-x-1/2 mt-1 px-2 py-1 bg-gray-800 text-white text-xs rounded shadow-lg">
             Copiado!
           </span>
         )}
