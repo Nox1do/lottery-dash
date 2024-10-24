@@ -254,10 +254,10 @@ def scrape_all_lotteries():
 
     with ThreadPoolExecutor(max_workers=3) as executor:
         future_to_state = {executor.submit(scrape_state_lottery, state): state for state in states}
-        for future in as_completed(future_to_state, timeout=60):
+        for future in as_completed(future_to_state, timeout=120):
             state = future_to_state[future]
             try:
-                result = future.result(timeout=10)
+                result = future.result(timeout=20)
                 if result and result[state]:
                     all_results.update(result)
                     logging.info(f"Scraping completado para {state}")
