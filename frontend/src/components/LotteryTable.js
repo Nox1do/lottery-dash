@@ -99,7 +99,7 @@ const LotteryTable = ({ results, messages, lastUpdateTime }) => {
           <span className={`absolute transform px-2 py-1 bg-gray-800 text-white text-xs rounded shadow-lg whitespace-nowrap
             ${isMobile 
               ? 'bottom-[-20px] left-1/2 -translate-x-1/2' 
-              : 'left-[-70px] top-1/2 -translate-y-1/2'}`}
+              : 'right-[-70px] top-1/2 -translate-y-1/2'}`}
           >
             Copiado!
           </span>
