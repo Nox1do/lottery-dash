@@ -87,23 +87,29 @@ const LotteryTable = ({ results, messages, lastUpdateTime }) => {
     if (!result) return null;
 
     return (
-      <div className={`flex flex-col items-center relative ${isMobile ? 'min-h-[60px]' : 'min-h-[40px]'}`}>
+      <div className="relative inline-flex flex-col items-center">
         <span className="text-sm font-medium text-gray-500 mb-1">{label}</span>
-        <button
-          onClick={copyToClipboard}
-          className="text-2xl font-bold bg-green-100 text-green-800 px-4 py-2 rounded-lg hover:bg-green-200 transition-colors duration-200"
-        >
-          {result}
-        </button>
-        {copied && (
-          <span className={`absolute transform px-2 py-1 bg-gray-800 text-white text-xs rounded shadow-lg whitespace-nowrap
-            ${isMobile 
-              ? 'bottom-[-20px] left-1/2 -translate-x-1/2' 
-              : 'right-[-70px] top-1/2 -translate-y-1/2'}`}
+        <div className="relative"> {/* Contenedor adicional para el botón y el mensaje */}
+          <button
+            onClick={copyToClipboard}
+            className="text-2xl font-bold bg-green-100 text-green-800 px-4 py-2 rounded-lg hover:bg-green-200 transition-colors duration-200"
           >
-            Copiado!
-          </span>
-        )}
+            {result}
+          </button>
+          {copied && (
+            <div 
+              className={`
+                absolute z-10 px-2 py-1 bg-gray-800 text-white text-xs rounded shadow-lg whitespace-nowrap
+                ${isMobile 
+                  ? 'left-1/2 -translate-x-1/2 top-[calc(100%+4px)]' // Mobile: centrado abajo
+                  : 'left-[calc(100%+8px)] top-1/2 -translate-y-1/2'  // Desktop: centrado a la derecha
+                }
+              `}
+            >
+              Copiado!
+            </div>
+          )}
+        </div>
       </div>
     );
   };
@@ -140,9 +146,9 @@ const LotteryTable = ({ results, messages, lastUpdateTime }) => {
             <h3 className="text-lg font-semibold text-gray-800 mb-3 text-center">
               {stateNames[state] || state.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
             </h3>
-            <div className="flex justify-around">
-              <ResultWithCopyButton result={results[`${state}-Pick 3`]?.result} label="PICK 3" />
-              <ResultWithCopyButton result={results[`${state}-Pick 4`]?.result} label="PICK 4" />
+            <div className="flex justify-around gap-8"> {/* Añadido gap-8 para espacio entre Pick 3 y Pick 4 */}
+              <ResultWithCopyButton result={results[`${state}-Pick 3`]?.result} label="PICK 3" isMobile={true} />
+              <ResultWithCopyButton result={results[`${state}-Pick 4`]?.result} label="PICK 4" isMobile={true} />
             </div>
             <div className="mt-3 text-sm text-center text-gray-500">
               Última actualización: {formatDateTime(results[`${state}-Pick 3`]?.date || results[`${state}-Pick 4`]?.date)}
@@ -170,7 +176,7 @@ const LotteryTable = ({ results, messages, lastUpdateTime }) => {
             <td className="px-4 py-2 text-xl font-bold">
               {(stateNames[state] || state.replace(/-/g, ' ')).split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ')}
             </td>
-            <td className="px-4 py-2 text-center">
+            <td className="px-4 py-2 text-center relative"> {/* Añadido relative para contención */}
               <ResultWithCopyButton result={results[`${state}-Pick 3`]?.result} isMobile={false} />
             </td>
             <td className="px-4 py-2 text-center">
