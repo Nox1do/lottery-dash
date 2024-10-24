@@ -74,20 +74,20 @@ const LotteryTable = ({ results, messages, lastUpdateTime }) => {
     });
   };
 
-  const ResultWithCopyButton = ({ result, label }) => {
+  const ResultWithCopyButton = ({ result, label, isMobile }) => {
     const [copied, setCopied] = useState(false);
-  
+
     const copyToClipboard = useCallback(() => {
       navigator.clipboard.writeText(result).then(() => {
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
       });
     }, [result]);
-  
+
     if (!result) return null;
-  
+
     return (
-      <div className="flex flex-col items-center relative min-h-[100px]">
+      <div className={`flex flex-col items-center relative ${isMobile ? 'min-h-[60px]' : 'min-h-[40px]'}`}>
         <span className="text-sm font-medium text-gray-500 mb-1">{label}</span>
         <button
           onClick={copyToClipboard}
@@ -96,7 +96,7 @@ const LotteryTable = ({ results, messages, lastUpdateTime }) => {
           {result}
         </button>
         {copied && (
-          <span className="absolute top-full left-1/2 transform -translate-x-1/2 mt-1 px-2 py-1 bg-gray-800 text-white text-xs rounded shadow-lg">
+          <span className="absolute bottom-[-20px] left-1/2 transform -translate-x-1/2 px-2 py-1 bg-gray-800 text-white text-xs rounded shadow-lg">
             Copiado!
           </span>
         )}
