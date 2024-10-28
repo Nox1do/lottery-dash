@@ -250,54 +250,45 @@ def scrape_state_lottery(state):
 @cached(cache)
 def scrape_all_lotteries():
     logging.info("Iniciando scrape_all_lotteries")
+    
+    # Intentar obtener del caché primero
+    cached_results = cache.get('lottery_results')
+    if cached_results:
+        logging.info("Retornando resultados del caché")
+        return cached_results
+
     states = [
-        'tennessee', 'texas', 'maryland', 'ohio', 'georgia', 'new-jersey', 'south-carolina', 'michigan',
-        'maine', 'new-hampshire', 'iowa', 'rhode-island', 'kentucky', 'indiana', 'florida',
-        'pennsylvania', 'tennessee-2', 'texas-2', 'illinois', 'missouri', 'district-of-columbia',
-        'massachusetts', 'arkansas', 'virginia', 'kansas', 'delaware', 'connecticut', 'new-york',
-        'wisconsin', 'north-carolina', 'new-mexico', 'mississippi', 'colorado', 'oregon',
-        'california', 'idaho'
+        'tennessee', 'texas', 'maryland', 'ohio', 'georgia', 'new-jersey', 
+        'south-carolina', 'michigan', 'maine', 'new-hampshire', 'iowa', 
+        'rhode-island', 'kentucky', 'indiana', 'florida', 'pennsylvania', 
+        'tennessee-2', 'texas-2', 'illinois', 'missouri', 'district-of-columbia',
+        'massachusetts', 'arkansas', 'virginia', 'kansas', 'delaware', 
+        'connecticut', 'new-york', 'wisconsin', 'north-carolina', 'new-mexico', 
+        'mississippi', 'colorado', 'oregon', 'california', 'idaho'
     ]
     
     all_results = {}
     
-    # Aumentamos el número de workers y ajustamos los timeouts
-    with ThreadPoolExecutor(max_workers=10) as executor:
+    with ThreadPoolExecutor(max_workers=5) as executor:
         future_to_state = {
             executor.submit(scrape_state_lottery, state): state 
             for state in states
         }
         
-        try:
-            # Procesamos los futures con un timeout más largo
-            completed_futures = as_completed(future_to_state, timeout=180)
-            for future in completed_futures:
-                state = future_to_state[future]
-                try:
-                    result = future.result(timeout=45)
-                    if result and isinstance(result, dict) and state in result and result[state]:
-                        all_results.update(result)
-                        logging.info(f"Scraping completado para {state}")
-                    else:
-                        logging.warning(f"No se obtuvieron resultados para {state}")
-                except TimeoutError:
-                    logging.warning(f"Timeout al procesar el estado {state}")
-                    future.cancel()
-                except Exception as exc:
-                    logging.error(f"Error al procesar el estado {state}: {exc}")
-                    future.cancel()
-        except Exception as e:
-            logging.error(f"Error en el procesamiento de futures: {str(e)}")
-        finally:
-            # Cancelar futures pendientes y esperar un tiempo prudente
-            for future in future_to_state:
-                if not future.done():
-                    future.cancel()
-            
-            # Esperamos un momento para asegurar que todos los futures se cancelen correctamente
-            executor.shutdown(wait=True, cancel_futures=True)
+        for future in as_completed(future_to_state):
+            state = future_to_state[future]
+            try:
+                result = future.result(timeout=30)
+                if result and isinstance(result, dict):
+                    all_results.update(result)
+                    logging.info(f"Scraping completado para {state}")
+            except Exception as exc:
+                logging.error(f"Error al procesar {state}: {exc}")
 
-    logging.info(f"scrape_all_lotteries completado. Estados procesados: {len(all_results)}")
+    if all_results:
+        cache.set('lottery_results', all_results)
+        logging.info(f"Resultados guardados en caché. Estados procesados: {len(all_results)}")
+    
     return all_results
 
 if __name__ == '__main__':
