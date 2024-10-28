@@ -115,16 +115,10 @@ const LotteryTable = ({ results, messages, lastUpdateTime }) => {
   };
 
   const sortedAndFilteredStates = useMemo(() => {
-    return stateOrder
-      .filter(state => state.toLowerCase().includes(searchTerm.toLowerCase()))
-      .sort((a, b) => {
-        const resultA = results[`${a}-Pick 3`]?.result || results[`${a}-Pick 4`]?.result;
-        const resultB = results[`${b}-Pick 3`]?.result || results[`${b}-Pick 4`]?.result;
-        if (resultA && !resultB) return -1;
-        if (!resultA && resultB) return 1;
-        return 0;
-      });
-  }, [results, searchTerm]);
+    return stateOrder.filter(state => 
+      state.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [searchTerm]);
 
   const renderMobileView = () => (
     <div className="sm:hidden">
