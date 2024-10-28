@@ -5,7 +5,6 @@ from datetime import datetime
 import pytz
 import os
 import logging
-from cachetools import TTLCache
 
 app = Flask(__name__)
 CORS(app, resources={
@@ -19,9 +18,6 @@ CORS(app, resources={
 # Configuración de logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-# Crear un caché que expire después de 24 horas
-cache = TTLCache(maxsize=50, ttl=300)
 
 @app.route('/')
 def home():
