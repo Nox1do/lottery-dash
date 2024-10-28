@@ -4,13 +4,15 @@ from concurrent.futures import ThreadPoolExecutor, as_completed, TimeoutError
 from datetime import datetime, timedelta
 import pytz
 import sys
-from cachetools import TTLCache, cached
+from cachetools import TTLCache
 import logging
+import threading
 
 logging.basicConfig(level=logging.INFO)
 
-# Crear un caché que expire después de 24 horas
-cache = TTLCache(maxsize=50, ttl=300)  # 600 segundos = 10 minutos
+# Crear un caché que expire después de 5 minutos
+cache = TTLCache(maxsize=50, ttl=300)
+cache_lock = threading.Lock()  # Añadimos un lock para operaciones thread-safe
 
 def scrape_state_lottery(state):
     try:
@@ -247,15 +249,15 @@ def scrape_state_lottery(state):
         logging.error(f"Error general procesando {state}: {str(e)}")
         return None
 
-@cached(cache)
 def scrape_all_lotteries():
     logging.info("Iniciando scrape_all_lotteries")
     
-    # Intentar obtener del caché primero
-    cached_results = cache.get('lottery_results')
-    if cached_results:
-        logging.info("Retornando resultados del caché")
-        return cached_results
+    # Intentar obtener del caché de manera thread-safe
+    with cache_lock:
+        cached_results = cache.get('lottery_results')
+        if cached_results:
+            logging.info("Retornando resultados del caché")
+            return cached_results
 
     states = [
         'tennessee', 'texas', 'maryland', 'ohio', 'georgia', 'new-jersey', 
@@ -286,8 +288,10 @@ def scrape_all_lotteries():
                 logging.error(f"Error al procesar {state}: {exc}")
 
     if all_results:
-        cache.set('lottery_results', all_results)
-        logging.info(f"Resultados guardados en caché. Estados procesados: {len(all_results)}")
+        # Guardar en caché de manera thread-safe
+        with cache_lock:
+            cache['lottery_results'] = all_results
+            logging.info(f"Resultados guardados en caché. Estados procesados: {len(all_results)}")
     
     return all_results
 
