@@ -261,33 +261,41 @@ def scrape_all_lotteries():
     
     all_results = {}
     
-    # Reducir el número de workers y aumentar los timeouts
-    with ThreadPoolExecutor(max_workers=5) as executor:
+    # Aumentamos el número de workers y ajustamos los timeouts
+    with ThreadPoolExecutor(max_workers=10) as executor:
         future_to_state = {
             executor.submit(scrape_state_lottery, state): state 
             for state in states
         }
         
         try:
-            # Procesar los futures con un timeout más largo
-            for future in as_completed(future_to_state, timeout=120):
+            # Procesamos los futures con un timeout más largo
+            completed_futures = as_completed(future_to_state, timeout=180)
+            for future in completed_futures:
                 state = future_to_state[future]
                 try:
-                    result = future.result(timeout=30)
-                    if result and result[state]:
+                    result = future.result(timeout=45)
+                    if result and isinstance(result, dict) and state in result and result[state]:
                         all_results.update(result)
                         logging.info(f"Scraping completado para {state}")
+                    else:
+                        logging.warning(f"No se obtuvieron resultados para {state}")
                 except TimeoutError:
                     logging.warning(f"Timeout al procesar el estado {state}")
+                    future.cancel()
                 except Exception as exc:
                     logging.error(f"Error al procesar el estado {state}: {exc}")
+                    future.cancel()
         except Exception as e:
             logging.error(f"Error en el procesamiento de futures: {str(e)}")
         finally:
-            # Cancelar futures pendientes
+            # Cancelar futures pendientes y esperar un tiempo prudente
             for future in future_to_state:
                 if not future.done():
                     future.cancel()
+            
+            # Esperamos un momento para asegurar que todos los futures se cancelen correctamente
+            executor.shutdown(wait=True, cancel_futures=True)
 
     logging.info(f"scrape_all_lotteries completado. Estados procesados: {len(all_results)}")
     return all_results
