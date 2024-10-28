@@ -30,11 +30,15 @@ def get_lottery_results():
         results = scrape_all_lotteries()
         
         # Si no hay resultados pero el caché existe, usar el caché
-        if not results and hasattr(scrape_all_lotteries, 'cache_info'):
-            cached_value = cache.get('scrape_all_lotteries')
-            if cached_value:
-                results = cached_value
-                logging.info("Usando resultados en caché")
+        if not results:
+            try:
+                with cache_lock:
+                    cached_results = cache.get('lottery_results')
+                    if cached_results:
+                        results = cached_results
+                        logging.info("Usando resultados en caché")
+            except Exception as e:
+                logging.error(f"Error al acceder al caché: {str(e)}")
         
         if not results:
             return jsonify({
@@ -48,45 +52,23 @@ def get_lottery_results():
         eastern = pytz.timezone('US/Eastern')
         current_time = datetime.now(eastern)
         
-        for state, state_results in results.items():
-            for lottery, lottery_result in state_results.items():
-                if 'date' in lottery_result:
-                    date_str = lottery_result['date']
-                    try:
-                        date_obj = datetime.strptime(date_str, '%Y-%m-%dT%H:%M:%S%z')
-                    except ValueError:
-                        try:
-                            date_obj = datetime.strptime(date_str, '%Y-%m-%d')
-                            date_obj = eastern.localize(date_obj)
-                        except ValueError:
-                            date_parts = date_str.split('T')
-                            if len(date_parts) == 2:
-                                try:
-                                    date_obj = datetime.strptime(date_parts[0], '%Y-%m-%d')
-                                    date_obj = eastern.localize(date_obj)
-                                except ValueError:
-                                    logger.error(f"Error al parsear la fecha para {state} - {lottery}: {date_str}")
-                                    date_obj = current_time
-                            else:
-                                logger.error(f"Error al parsear la fecha para {state} - {lottery}: {date_str}")
-                                date_obj = current_time
-                    lottery_result['date'] = date_obj.isoformat()
-        
         response = {
             "date": current_time.isoformat(),
             "results": results,
             "states_checked": [
-                'tennessee', 'texas', 'maryland', 'ohio', 'georgia', 'new-jersey', 'south-carolina', 'michigan',
-                'maine', 'new-hampshire', 'iowa', 'rhode-island', 'kentucky', 'indiana', 'florida',
-                'pennsylvania', 'tennessee-2', 'texas-2', 'illinois', 'missouri', 'district-of-columbia',
-                'massachusetts', 'arkansas', 'virginia', 'kansas', 'delaware', 'connecticut', 'new-york',
-                'wisconsin', 'north-carolina', 'new-mexico', 'mississippi', 'colorado', 'oregon',
-                'california', 'idaho'
+                'tennessee', 'texas', 'maryland', 'ohio', 'georgia', 'new-jersey', 
+                'south-carolina', 'michigan', 'maine', 'new-hampshire', 'iowa', 
+                'rhode-island', 'kentucky', 'indiana', 'florida', 'pennsylvania', 
+                'tennessee-2', 'texas-2', 'illinois', 'missouri', 'district-of-columbia',
+                'massachusetts', 'arkansas', 'virginia', 'kansas', 'delaware', 
+                'connecticut', 'new-york', 'wisconsin', 'north-carolina', 'new-mexico', 
+                'mississippi', 'colorado', 'oregon', 'california', 'idaho'
             ],
             "states_with_results": list(results.keys())
         }
-        logger.info("Resultados de la lotería procesados exitosamente")
+        
         return jsonify(response)
+        
     except Exception as e:
         logging.exception("Error procesando resultados")
         return jsonify({

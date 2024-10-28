@@ -254,11 +254,14 @@ def scrape_all_lotteries():
     
     # Intentar obtener del caché de manera thread-safe
     with cache_lock:
-        cached_results = cache.get('lottery_results')
-        if cached_results:
-            logging.info("Retornando resultados del caché")
-            return cached_results
-
+        try:
+            cached_results = cache.get('lottery_results')
+            if cached_results:
+                logging.info("Retornando resultados del caché")
+                return cached_results
+        except Exception as e:
+            logging.error(f"Error al acceder al caché: {str(e)}")
+    
     states = [
         'tennessee', 'texas', 'maryland', 'ohio', 'georgia', 'new-jersey', 
         'south-carolina', 'michigan', 'maine', 'new-hampshire', 'iowa', 
@@ -290,8 +293,11 @@ def scrape_all_lotteries():
     if all_results:
         # Guardar en caché de manera thread-safe
         with cache_lock:
-            cache['lottery_results'] = all_results
-            logging.info(f"Resultados guardados en caché. Estados procesados: {len(all_results)}")
+            try:
+                cache['lottery_results'] = all_results
+                logging.info(f"Resultados guardados en caché. Estados procesados: {len(all_results)}")
+            except Exception as e:
+                logging.error(f"Error al guardar en caché: {str(e)}")
     
     return all_results
 
