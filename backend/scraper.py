@@ -13,6 +13,12 @@ logging.basicConfig(level=logging.INFO)
 # Modificar el caché para un tiempo más apropiado
 cache = TTLCache(maxsize=100, ttl=600)  # Aumentar a 10min
 
+# Reducir el número de workers y ajustar timeouts
+MAX_WORKERS = 3
+REQUEST_TIMEOUT = 10
+FUTURE_TIMEOUT = 20
+BATCH_SIZE = 5
+
 def scrape_state_lottery(state):
     try:
         logging.info(f"Iniciando scraping para {state}")
@@ -20,17 +26,25 @@ def scrape_state_lottery(state):
         base_state = state.replace('-2', '')
         url = f"https://www.lotteryusa.com/{base_state}/"
         
-        # Aumentar el timeout de la petición
-        response = requests.get(
-            url, 
-            headers={
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-            },
-            timeout=15  # 15 segundos de timeout
-        )
+        # Implementar backoff exponencial para reintentos
+        for attempt in range(3):
+            try:
+                response = requests.get(
+                    url, 
+                    headers={
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                    },
+                    timeout=REQUEST_TIMEOUT
+                )
+                break
+            except requests.RequestException:
+                if attempt == 2:
+                    raise
+                time.sleep(2 ** attempt)
+                continue
         
         if response.status_code != 200:
-            logging.error(f"Error HTTP {response.status_code} para {state}: {response.text[:200]}")
+            logging.error(f"Error HTTP {response.status_code} para {state}")
             return None
             
         soup = BeautifulSoup(response.content, 'html.parser')
@@ -268,48 +282,37 @@ def scrape_all_lotteries():
     
     all_results = {}
     
-    # Agregar retry logic
-    max_retries = 3
-    retry_delay = 5  # segundos
-    
-    def scrape_with_retry(state):
-        for attempt in range(max_retries):
-            try:
-                result = scrape_state_lottery(state)
-                if result:
-                    return result
-                time.sleep(retry_delay)
-            except Exception as e:
-                logging.error(f"Intento {attempt + 1} fallido para {state}: {e}")
-        return None
-
-    # Reducir el número de workers y aumentar los timeouts
-    with ThreadPoolExecutor(max_workers=5) as executor:
-        future_to_state = {
-            executor.submit(scrape_with_retry, state): state 
-            for state in states
-        }
-        
-        try:
-            # Procesar los futures con un timeout más largo
-            for future in as_completed(future_to_state, timeout=120):
+    # Procesar estados en lotes más pequeños
+    def process_batch(batch):
+        batch_results = {}
+        with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+            future_to_state = {
+                executor.submit(scrape_state_lottery, state): state 
+                for state in batch
+            }
+            
+            for future in as_completed(future_to_state, timeout=FUTURE_TIMEOUT):
                 state = future_to_state[future]
                 try:
-                    result = future.result(timeout=30)
-                    if result and result[state]:
-                        all_results.update(result)
+                    result = future.result(timeout=REQUEST_TIMEOUT)
+                    if result and isinstance(result, dict):
+                        batch_results.update(result)
                         logging.info(f"Scraping completado para {state}")
-                except TimeoutError:
-                    logging.warning(f"Timeout al procesar el estado {state}")
-                except Exception as exc:
-                    logging.error(f"Error al procesar el estado {state}: {exc}")
+                except Exception as e:
+                    logging.error(f"Error procesando {state}: {str(e)}")
+        return batch_results
+
+    # Procesar estados en lotes
+    for i in range(0, len(states), BATCH_SIZE):
+        batch = states[i:i + BATCH_SIZE]
+        try:
+            results = process_batch(batch)
+            all_results.update(results)
         except Exception as e:
-            logging.error(f"Error en el procesamiento de futures: {str(e)}")
-        finally:
-            # Cancelar futures pendientes
-            for future in future_to_state:
-                if not future.done():
-                    future.cancel()
+            logging.error(f"Error procesando lote {i//BATCH_SIZE + 1}: {str(e)}")
+        
+        # Pequeña pausa entre lotes
+        time.sleep(1)
 
     logging.info(f"scrape_all_lotteries completado. Estados procesados: {len(all_results)}")
     return all_results

@@ -34,65 +34,49 @@ def home():
 def get_lottery_results():
     try:
         with cache_lock:
-            # Verificar caché con retry
-            max_retries = 3
-            for attempt in range(max_retries):
-                try:
-                    cached_results = cache.get('lottery_results')
-                    if cached_results:
-                        logger.info("Usando resultados en caché")
-                        return jsonify(cached_results)
+            cached_results = cache.get('lottery_results')
+            if cached_results:
+                logger.info("Usando resultados en caché")
+                return jsonify(cached_results)
 
-                    # Si no hay resultados en caché, realizar el scraping con timeout
-                    start_time = time.time()
-                    results = scrape_all_lotteries()
-                    
-                    # Verificar si el scraping tomó demasiado tiempo
-                    if time.time() - start_time > 60:  # 60 segundos máximo
-                        logger.warning("Timeout en scraping")
-                        raise TimeoutError("Scraping tomó demasiado tiempo")
+            start_time = time.time()
+            results = scrape_all_lotteries()
+            
+            # Reducir el timeout total a 30 segundos
+            if time.time() - start_time > 30:
+                logger.warning("Timeout en scraping")
+                raise TimeoutError("Scraping tomó demasiado tiempo")
 
-                    if not results:
-                        if attempt < max_retries - 1:
-                            logger.warning(f"Intento {attempt + 1} fallido, reintentando...")
-                            time.sleep(2)  # Esperar 2 segundos antes de reintentar
-                            continue
-                        return jsonify({
-                            "error": "No se pudieron obtener resultados",
-                            "date": datetime.now(pytz.timezone('US/Eastern')).isoformat(),
-                            "results": {},
-                            "states_checked": [],
-                            "states_with_results": []
-                        }), 404
+            if not results:
+                return jsonify({
+                    "error": "No se pudieron obtener resultados",
+                    "date": datetime.now(pytz.timezone('US/Eastern')).isoformat(),
+                    "results": {},
+                    "states_checked": [],
+                    "states_with_results": []
+                }), 404
 
-                    # Procesar resultados exitosos
-                    eastern = pytz.timezone('US/Eastern')
-                    current_time = datetime.now(eastern)
+            # Procesar resultados exitosos
+            eastern = pytz.timezone('US/Eastern')
+            current_time = datetime.now(eastern)
 
-                    # Mejorar el procesamiento de fechas con mejor manejo de errores
-                    for state, state_results in results.items():
-                        for lottery, lottery_result in state_results.items():
-                            if 'date' in lottery_result:
-                                try:
-                                    date_str = lottery_result['date']
-                                    date_obj = parse_date_with_fallback(date_str, current_time, eastern)
-                                    lottery_result['date'] = date_obj.isoformat()
-                                except Exception as e:
-                                    logger.error(f"Error procesando fecha para {state}-{lottery}: {e}")
-                                    lottery_result['date'] = current_time.isoformat()
+            # Mejorar el procesamiento de fechas con mejor manejo de errores
+            for state, state_results in results.items():
+                for lottery, lottery_result in state_results.items():
+                    if 'date' in lottery_result:
+                        try:
+                            date_str = lottery_result['date']
+                            date_obj = parse_date_with_fallback(date_str, current_time, eastern)
+                            lottery_result['date'] = date_obj.isoformat()
+                        except Exception as e:
+                            logger.error(f"Error procesando fecha para {state}-{lottery}: {e}")
+                            lottery_result['date'] = current_time.isoformat()
 
-                    # Construir respuesta
-                    response = build_response(results, current_time)
-                    cache['lottery_results'] = response
-                    logger.info("Resultados de la lotería procesados exitosamente")
-                    return jsonify(response)
-
-                except TimeoutError:
-                    if attempt < max_retries - 1:
-                        logger.warning(f"Timeout en intento {attempt + 1}, reintentando...")
-                        time.sleep(2)
-                        continue
-                    raise
+            # Construir respuesta
+            response = build_response(results, current_time)
+            cache['lottery_results'] = response
+            logger.info("Resultados de la lotería procesados exitosamente")
+            return jsonify(response)
 
     except Exception as e:
         logger.exception("Error procesando resultados")
