@@ -18,12 +18,11 @@ CORS(app, resources={
     }
 })
 
-# Configuración de logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Crear un lock para el caché
 cache_lock = Lock()
+SCRAPING_TIMEOUT = 45  # Aumentamos el timeout a 45 segundos
 
 @app.route('/')
 def home():
@@ -34,19 +33,32 @@ def home():
 def get_lottery_results():
     try:
         with cache_lock:
+            # Intentar obtener resultados del caché primero
             cached_results = cache.get('lottery_results')
             if cached_results:
-                logger.info("Usando resultados en caché")
+                logger.info("Retornando resultados desde caché")
                 return jsonify(cached_results)
 
+            # Si no hay caché, iniciar scraping con timeout
             start_time = time.time()
-            results = scrape_all_lotteries()
+            results = None
             
-            # Reducir el timeout total a 30 segundos
-            if time.time() - start_time > 30:
-                logger.warning("Timeout en scraping")
-                raise TimeoutError("Scraping tomó demasiado tiempo")
+            try:
+                results = scrape_all_lotteries()
+                elapsed_time = time.time() - start_time
+                
+                if elapsed_time > SCRAPING_TIMEOUT:
+                    logger.warning(f"Scraping completado pero tomó demasiado tiempo: {elapsed_time:.2f}s")
+                    if cached_results:  # Si hay caché antiguo, usarlo
+                        return jsonify(cached_results)
+                    
+            except Exception as e:
+                logger.error(f"Error durante el scraping: {str(e)}")
+                if cached_results:  # En caso de error, usar caché si existe
+                    return jsonify(cached_results)
+                results = {}
 
+            # Si no hay resultados y no hay caché
             if not results:
                 return jsonify({
                     "error": "No se pudieron obtener resultados",
@@ -60,7 +72,7 @@ def get_lottery_results():
             eastern = pytz.timezone('US/Eastern')
             current_time = datetime.now(eastern)
 
-            # Mejorar el procesamiento de fechas con mejor manejo de errores
+            # Procesar fechas
             for state, state_results in results.items():
                 for lottery, lottery_result in state_results.items():
                     if 'date' in lottery_result:
@@ -72,14 +84,20 @@ def get_lottery_results():
                             logger.error(f"Error procesando fecha para {state}-{lottery}: {e}")
                             lottery_result['date'] = current_time.isoformat()
 
-            # Construir respuesta
+            # Construir y guardar respuesta en caché
             response = build_response(results, current_time)
             cache['lottery_results'] = response
-            logger.info("Resultados de la lotería procesados exitosamente")
+            logger.info(f"Nuevos resultados guardados en caché. Estados procesados: {len(results)}")
             return jsonify(response)
 
     except Exception as e:
-        logger.exception("Error procesando resultados")
+        logger.exception("Error general en get_lottery_results")
+        # En caso de error general, intentar usar caché
+        cached_results = cache.get('lottery_results')
+        if cached_results:
+            logger.info("Retornando resultados antiguos del caché debido a error")
+            return jsonify(cached_results)
+            
         return jsonify({
             "error": "Error interno del servidor",
             "message": str(e),
@@ -103,8 +121,6 @@ def parse_date_with_fallback(date_str, current_time, timezone):
         except ValueError:
             continue
     
-    # Si ningún formato funciona, usar tiempo actual
-    logger.warning(f"No se pudo parsear la fecha: {date_str}")
     return current_time
 
 def build_response(results, current_time):
