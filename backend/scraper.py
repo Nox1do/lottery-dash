@@ -4,18 +4,19 @@ from concurrent.futures import ThreadPoolExecutor, as_completed, TimeoutError
 from datetime import datetime, timedelta
 import pytz
 import sys
-from cachetools import TTLCache
+from cachetools import TTLCache, cached
 import logging
-import threading
+import time
 
 logging.basicConfig(level=logging.INFO)
 
-# Crear un caché que expire después de 5 minutos
-cache = TTLCache(maxsize=50, ttl=300)
-cache_lock = threading.Lock()  # Añadimos un lock para operaciones thread-safe
+# Modificar el caché para un tiempo más apropiado
+cache = TTLCache(maxsize=100, ttl=600)  # Aumentar a 10min
 
 def scrape_state_lottery(state):
     try:
+        logging.info(f"Iniciando scraping para {state}")
+        
         base_state = state.replace('-2', '')
         url = f"https://www.lotteryusa.com/{base_state}/"
         
@@ -29,10 +30,14 @@ def scrape_state_lottery(state):
         )
         
         if response.status_code != 200:
-            logging.warning(f"Estado {state}: Status code {response.status_code}")
+            logging.error(f"Error HTTP {response.status_code} para {state}: {response.text[:200]}")
             return None
             
         soup = BeautifulSoup(response.content, 'html.parser')
+        
+        if not soup.select('tr.c-result-card'):
+            logging.warning(f"No se encontraron resultados para {state}")
+            return None
         
         results = {}
         
@@ -249,56 +254,64 @@ def scrape_state_lottery(state):
         logging.error(f"Error general procesando {state}: {str(e)}")
         return None
 
+@cached(cache)
 def scrape_all_lotteries():
     logging.info("Iniciando scrape_all_lotteries")
-    
-    # Intentar obtener del caché de manera thread-safe
-    with cache_lock:
-        try:
-            cached_results = cache.get('lottery_results')
-            if cached_results:
-                logging.info("Retornando resultados del caché")
-                return cached_results
-        except Exception as e:
-            logging.error(f"Error al acceder al caché: {str(e)}")
-    
     states = [
-        'tennessee', 'texas', 'maryland', 'ohio', 'georgia', 'new-jersey', 
-        'south-carolina', 'michigan', 'maine', 'new-hampshire', 'iowa', 
-        'rhode-island', 'kentucky', 'indiana', 'florida', 'pennsylvania', 
-        'tennessee-2', 'texas-2', 'illinois', 'missouri', 'district-of-columbia',
-        'massachusetts', 'arkansas', 'virginia', 'kansas', 'delaware', 
-        'connecticut', 'new-york', 'wisconsin', 'north-carolina', 'new-mexico', 
-        'mississippi', 'colorado', 'oregon', 'california', 'idaho'
+        'tennessee', 'texas', 'maryland', 'ohio', 'georgia', 'new-jersey', 'south-carolina', 'michigan',
+        'maine', 'new-hampshire', 'iowa', 'rhode-island', 'kentucky', 'indiana', 'florida',
+        'pennsylvania', 'tennessee-2', 'texas-2', 'illinois', 'missouri', 'district-of-columbia',
+        'massachusetts', 'arkansas', 'virginia', 'kansas', 'delaware', 'connecticut', 'new-york',
+        'wisconsin', 'north-carolina', 'new-mexico', 'mississippi', 'colorado', 'oregon',
+        'california', 'idaho'
     ]
     
     all_results = {}
     
+    # Agregar retry logic
+    max_retries = 3
+    retry_delay = 5  # segundos
+    
+    def scrape_with_retry(state):
+        for attempt in range(max_retries):
+            try:
+                result = scrape_state_lottery(state)
+                if result:
+                    return result
+                time.sleep(retry_delay)
+            except Exception as e:
+                logging.error(f"Intento {attempt + 1} fallido para {state}: {e}")
+        return None
+
+    # Reducir el número de workers y aumentar los timeouts
     with ThreadPoolExecutor(max_workers=5) as executor:
         future_to_state = {
-            executor.submit(scrape_state_lottery, state): state 
+            executor.submit(scrape_with_retry, state): state 
             for state in states
         }
         
-        for future in as_completed(future_to_state):
-            state = future_to_state[future]
-            try:
-                result = future.result(timeout=30)
-                if result and isinstance(result, dict):
-                    all_results.update(result)
-                    logging.info(f"Scraping completado para {state}")
-            except Exception as exc:
-                logging.error(f"Error al procesar {state}: {exc}")
+        try:
+            # Procesar los futures con un timeout más largo
+            for future in as_completed(future_to_state, timeout=120):
+                state = future_to_state[future]
+                try:
+                    result = future.result(timeout=30)
+                    if result and result[state]:
+                        all_results.update(result)
+                        logging.info(f"Scraping completado para {state}")
+                except TimeoutError:
+                    logging.warning(f"Timeout al procesar el estado {state}")
+                except Exception as exc:
+                    logging.error(f"Error al procesar el estado {state}: {exc}")
+        except Exception as e:
+            logging.error(f"Error en el procesamiento de futures: {str(e)}")
+        finally:
+            # Cancelar futures pendientes
+            for future in future_to_state:
+                if not future.done():
+                    future.cancel()
 
-    if all_results:
-        # Guardar en caché de manera thread-safe
-        with cache_lock:
-            try:
-                cache['lottery_results'] = all_results
-                logging.info(f"Resultados guardados en caché. Estados procesados: {len(all_results)}")
-            except Exception as e:
-                logging.error(f"Error al guardar en caché: {str(e)}")
-    
+    logging.info(f"scrape_all_lotteries completado. Estados procesados: {len(all_results)}")
     return all_results
 
 if __name__ == '__main__':
