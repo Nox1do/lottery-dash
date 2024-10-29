@@ -1,7 +1,3 @@
-Aquí tienes el texto formateado en Markdown para un archivo README:
-
----
-
 # Lottery Scraping and Results Visualization System
 
 ## Project Overview
