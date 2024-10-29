@@ -6,6 +6,8 @@ import pytz
 import os
 import logging
 from threading import Lock
+from concurrent.futures import TimeoutError
+import time
 
 app = Flask(__name__)
 CORS(app, resources={
@@ -32,69 +34,66 @@ def home():
 def get_lottery_results():
     try:
         with cache_lock:
-            # Verificar si los resultados ya están en caché
-            cached_results = cache.get('lottery_results')
-            if cached_results:
-                logger.info("Usando resultados en caché")
-                return jsonify(cached_results)
+            # Verificar caché con retry
+            max_retries = 3
+            for attempt in range(max_retries):
+                try:
+                    cached_results = cache.get('lottery_results')
+                    if cached_results:
+                        logger.info("Usando resultados en caché")
+                        return jsonify(cached_results)
 
-            # Si no hay resultados en caché, realizar el scraping
-            results = scrape_all_lotteries()
-            if not results:
-                return jsonify({
-                    "error": "No se pudieron obtener resultados",
-                    "date": datetime.now(pytz.timezone('US/Eastern')).isoformat(),
-                    "results": {},
-                    "states_checked": [],
-                    "states_with_results": []
-                }), 404
+                    # Si no hay resultados en caché, realizar el scraping con timeout
+                    start_time = time.time()
+                    results = scrape_all_lotteries()
+                    
+                    # Verificar si el scraping tomó demasiado tiempo
+                    if time.time() - start_time > 60:  # 60 segundos máximo
+                        logger.warning("Timeout en scraping")
+                        raise TimeoutError("Scraping tomó demasiado tiempo")
 
-            eastern = pytz.timezone('US/Eastern')
-            current_time = datetime.now(eastern)
+                    if not results:
+                        if attempt < max_retries - 1:
+                            logger.warning(f"Intento {attempt + 1} fallido, reintentando...")
+                            time.sleep(2)  # Esperar 2 segundos antes de reintentar
+                            continue
+                        return jsonify({
+                            "error": "No se pudieron obtener resultados",
+                            "date": datetime.now(pytz.timezone('US/Eastern')).isoformat(),
+                            "results": {},
+                            "states_checked": [],
+                            "states_with_results": []
+                        }), 404
 
-            # Procesar las fechas de los resultados
-            for state, state_results in results.items():
-                for lottery, lottery_result in state_results.items():
-                    if 'date' in lottery_result:
-                        date_str = lottery_result['date']
-                        try:
-                            date_obj = datetime.strptime(date_str, '%Y-%m-%dT%H:%M:%S%z')
-                        except ValueError:
-                            try:
-                                date_obj = datetime.strptime(date_str, '%Y-%m-%d')
-                                date_obj = eastern.localize(date_obj)
-                            except ValueError:
-                                date_parts = date_str.split('T')
-                                if len(date_parts) == 2:
-                                    try:
-                                        date_obj = datetime.strptime(date_parts[0], '%Y-%m-%d')
-                                        date_obj = eastern.localize(date_obj)
-                                    except ValueError:
-                                        logger.error(f"Error al parsear la fecha para {state} - {lottery}: {date_str}")
-                                        date_obj = current_time
-                                else:
-                                    logger.error(f"Error al parsear la fecha para {state} - {lottery}: {date_str}")
-                                    date_obj = current_time
-                        lottery_result['date'] = date_obj.isoformat()
+                    # Procesar resultados exitosos
+                    eastern = pytz.timezone('US/Eastern')
+                    current_time = datetime.now(eastern)
 
-            # Guardar en caché los resultados procesados
-            response = {
-                "date": current_time.isoformat(),
-                "results": results,
-                "states_checked": [
-                    'tennessee', 'texas', 'maryland', 'ohio', 'georgia', 'new-jersey', 'south-carolina', 'michigan',
-                    'maine', 'new-hampshire', 'iowa', 'rhode-island', 'kentucky', 'indiana', 'florida',
-                    'pennsylvania', 'tennessee-2', 'texas-2', 'illinois', 'missouri', 'district-of-columbia',
-                    'massachusetts', 'arkansas', 'virginia', 'kansas', 'delaware', 'connecticut', 'new-york',
-                    'wisconsin', 'north-carolina', 'new-mexico', 'mississippi', 'colorado', 'oregon',
-                    'california', 'idaho'
-                ],
-                "states_with_results": list(results.keys())
-            }
-            cache['lottery_results'] = response
-            logger.info("Resultados de la lotería procesados exitosamente")
-            return jsonify(response)
-        
+                    # Mejorar el procesamiento de fechas con mejor manejo de errores
+                    for state, state_results in results.items():
+                        for lottery, lottery_result in state_results.items():
+                            if 'date' in lottery_result:
+                                try:
+                                    date_str = lottery_result['date']
+                                    date_obj = parse_date_with_fallback(date_str, current_time, eastern)
+                                    lottery_result['date'] = date_obj.isoformat()
+                                except Exception as e:
+                                    logger.error(f"Error procesando fecha para {state}-{lottery}: {e}")
+                                    lottery_result['date'] = current_time.isoformat()
+
+                    # Construir respuesta
+                    response = build_response(results, current_time)
+                    cache['lottery_results'] = response
+                    logger.info("Resultados de la lotería procesados exitosamente")
+                    return jsonify(response)
+
+                except TimeoutError:
+                    if attempt < max_retries - 1:
+                        logger.warning(f"Timeout en intento {attempt + 1}, reintentando...")
+                        time.sleep(2)
+                        continue
+                    raise
+
     except Exception as e:
         logger.exception("Error procesando resultados")
         return jsonify({
@@ -102,6 +101,44 @@ def get_lottery_results():
             "message": str(e),
             "date": datetime.now(pytz.timezone('US/Eastern')).isoformat()
         }), 500
+
+def parse_date_with_fallback(date_str, current_time, timezone):
+    """Función auxiliar para parsear fechas con múltiples formatos"""
+    formats_to_try = [
+        '%Y-%m-%dT%H:%M:%S%z',
+        '%Y-%m-%d',
+        '%Y-%m-%dT%H:%M:%S'
+    ]
+    
+    for date_format in formats_to_try:
+        try:
+            date_obj = datetime.strptime(date_str, date_format)
+            if date_format == '%Y-%m-%d':
+                date_obj = timezone.localize(date_obj)
+            return date_obj
+        except ValueError:
+            continue
+    
+    # Si ningún formato funciona, usar tiempo actual
+    logger.warning(f"No se pudo parsear la fecha: {date_str}")
+    return current_time
+
+def build_response(results, current_time):
+    """Función auxiliar para construir la respuesta"""
+    return {
+        "date": current_time.isoformat(),
+        "results": results,
+        "states_checked": [
+            'tennessee', 'texas', 'maryland', 'ohio', 'georgia', 'new-jersey', 
+            'south-carolina', 'michigan', 'maine', 'new-hampshire', 'iowa', 
+            'rhode-island', 'kentucky', 'indiana', 'florida', 'pennsylvania', 
+            'tennessee-2', 'texas-2', 'illinois', 'missouri', 'district-of-columbia',
+            'massachusetts', 'arkansas', 'virginia', 'kansas', 'delaware', 
+            'connecticut', 'new-york', 'wisconsin', 'north-carolina', 'new-mexico',
+            'mississippi', 'colorado', 'oregon', 'california', 'idaho'
+        ],
+        "states_with_results": list(results.keys())
+    }
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
