@@ -6,6 +6,7 @@ import pytz
 import sys
 from cachetools import TTLCache, cached
 import logging
+import time
 
 logging.basicConfig(level=logging.INFO)
 
@@ -13,13 +14,27 @@ logging.basicConfig(level=logging.INFO)
 cache = TTLCache(maxsize=100, ttl=300)  # 300 segundos = 5minutos
 
 def scrape_state_lottery(state):
-    base_state = state.replace('-2', '')
-    url = f"https://www.lotteryusa.com/{base_state}/"
+    session = requests.Session()
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'none',
+        'Sec-Fetch-User': '?1',
+        'Cache-Control': 'max-age=0',
     }
     
-    response = requests.get(url, headers=headers)
+    # Visitar primero la página principal
+    session.get('https://www.lotteryusa.com/', headers=headers)
+    time.sleep(2)
+    
+    url = f"https://www.lotteryusa.com/{state}/"
+    response = session.get(url, headers=headers)
     
     if response.status_code != 200:
         return None
