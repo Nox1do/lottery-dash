@@ -48,12 +48,12 @@ def scrape_state_lottery(state):
     state_configs = {
         'tennessee': {
             'Pick 3': {
-                'numbers': 'tr.c-results-table__item:nth-child(4) > td:nth-child(3) > div:nth-child(1) > div:nth-child(1) > ul:nth-child(1) > li',
-                'date': 'tr.c-results-table__item:nth-child(4) > td:nth-child(1) > div:nth-child(2) > time:nth-child(2)'
+                'numbers': 'tr.c-results-table__item:nth-child(1) > td:nth-child(3) > div:nth-child(1) > div:nth-child(1) > ul:nth-child(1) > li',
+                'date': 'tr.c-results-table__item:nth-child(1) > td:nth-child(1) > div:nth-child(2) > time:nth-child(2)'
             },
             'Pick 4': {
-                'numbers': 'tr.c-results-table__item:nth-child(7) > td:nth-child(3) > div:nth-child(1) > div:nth-child(1) > ul:nth-child(1) > li',
-                'date': 'tr.c-results-table__item:nth-child(7) > td:nth-child(1) > div:nth-child(2) > time:nth-child(2)'
+                'numbers': 'tr.c-results-table__item:nth-child(5) > td:nth-child(3) > div:nth-child(1) > div:nth-child(1) > ul:nth-child(1) > li',
+                'date': 'tr.c-results-table__item:nth-child(5) > td:nth-child(1) > div:nth-child(2) > time:nth-child(2)'
             }
         },
         'district-of-columbia': {
